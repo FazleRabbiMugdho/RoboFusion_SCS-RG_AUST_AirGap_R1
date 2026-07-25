@@ -5,6 +5,8 @@
 #include "sensors/pir.h"
 #include "sensors/water.h"
 #include "actuators/actuators.h"
+#include "network/wifi_manager.h"
+#include "network/command_server.h"
 
 void setup() {
   Serial.begin(115200);
@@ -52,12 +54,17 @@ void setup() {
   initFlameGas();
   initPir();
 
+  connectWiFi();
+  initCommandServer();
+
   Serial.println("=== Boot complete ===\n");
 }
 
 static const uint32_t POLL_INTERVAL_MS = 500;
 
 void loop() {
+  handleCommandClient();
+
   static uint32_t last_poll = 0;
   uint32_t now = millis();
 

@@ -12,8 +12,9 @@ from backend.app.database import get_db
 from backend.app.models.reading import Reading
 from backend.app.models.sensor import Sensor
 from backend.app.models.zone import Zone
-from backend.app.schemas.enums import HazardType
+from backend.app.schemas.enums import HazardType, ZoneState
 from backend.app.schemas.readings import ZoneIngestionPayload
+from backend.app.services.actuation_dispatch import dispatch_actuation_commands
 from backend.app.services.broadcast import manager as ws_manager
 from backend.app.services.risk_fusion import (
     classify_risk,
@@ -138,6 +139,18 @@ async def ingest_readings(
         zone.pending_band = new_pending_band
         zone.pending_count = new_pending_count
         await record_state_transition(db, zone, result_state, risk_score)
+
+        if result_state == ZoneState.CRITICAL:
+            command = {"buzzer": True, "led": True, "relay": True}
+            targets = [(zone.ip_address, command)]
+        elif old_state == ZoneState.CRITICAL and result_state != ZoneState.CRITICAL:
+            command = {"buzzer": False, "led": False, "relay": False}
+            targets = [(zone.ip_address, command)]
+        else:
+            targets = None
+
+        if targets:
+            await dispatch_actuation_commands(targets)
 
     # Broadcast to dashboard after every successful ingestion
     await ws_manager.broadcast(

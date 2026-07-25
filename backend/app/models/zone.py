@@ -19,4 +19,5 @@ class Zone(Base):
     last_seen_at = Column(DateTime(timezone=True), nullable=True)
     state_since = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     last_risk_breakdown = Column(JSON, nullable=True)
+    ip_address = Column(String(45), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
