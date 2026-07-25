@@ -136,12 +136,12 @@ Brief — established as Figma Variables per that brief's Consistency Tokens sec
      the *model* Antigravity exposes vs. Antigravity's own *app-level request
      quota* — these are two different limits and a paid Gemini plan does not
      automatically raise the app's own daily/5-hour request cap.
-   - **OpenCode + OpenRouter**: everything else. Since the OpenRouter account here
-     is paid, target a free DeepSeek-family model (verify the live slug at Phase 0
-     — do not assume a specific "DeepSeek Flash free" ID is currently servable)
-     but let the fallback be a cheap **paid** model on the same account rather than
-     hunting for a second free one — reliability matters more than a marginal cost
-     during a 48-hour window.
+   - **OpenCode + OpenRouter**: everything else. OpenRouter is already configured
+      globally at `~/.config/opencode/opencode.jsonc` — no project-level `.env` var
+      needed. Since the account is paid, target a free DeepSeek-family model
+      (verify the live slug at Phase 0) but let the fallback be a cheap **paid**
+      model rather than hunting for a second free one — reliability matters more
+      than marginal cost during a 48-hour window.
    - **Figma Make**: Prompt 23 (screen generation) only; it is not a
      logic-generation tool. Prompt 4 (token import) can run **in parallel** with
      Phase 1/2 backend work — it has no code dependency, so don't sequence it
@@ -156,7 +156,9 @@ Brief — established as Figma Variables per that brief's Consistency Tokens sec
       (`docker run --name robofusion-db -e POSTGRES_PASSWORD=... -p 5432:5432 -d
       postgres:16`) or a hosted instance. Note the connection string; it goes in
       `.env`, never committed.
-- [ ] OpenRouter account (already paid) — confirm an active API key exists.
+- [ ] OpenRouter account (already paid) — confirm an active API key exists
+      (already configured globally in OpenCode at
+      `~/.config/opencode/opencode.jsonc` — no project-level `.env` var needed).
       **Before relying on any specific free model, check openrouter.ai/models
       filtered to $0 pricing, and record which model ID you're actually using** —
       the free roster rotates and a dedicated DeepSeek free variant is not
@@ -217,11 +219,10 @@ what it's for and which later prompt first consumes it:
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/robofusion  # Prompt 7
 ZONE_API_KEY_SALT=changeme  # Prompt 15, per-zone key hashing
 JWT_SECRET=changeme  # Prompt 22, dashboard auth
-OPENROUTER_API_KEY=  # Prompt 2, tooling only — never read by app code
-OPENROUTER_MODEL_PRIMARY=  # Prompt 2
-OPENROUTER_MODEL_FALLBACK=  # Prompt 2
 GEMINI_API_KEY=  # Prompt 37, Bonus 4 only
 DISCORD_WEBHOOK_URL=  # Prompt 33, Bonus differentiator only
+# OpenRouter is configured globally in OpenCode (~/.config/opencode/opencode.jsonc)
+# — no project-level env vars needed for AI tooling
 ```
 No real feature code yet.
 
@@ -276,82 +277,52 @@ Create `AGENTS.md` at the repo root covering, concretely for this project:
 
 ### Prompt 2 — OpenCode + OpenRouter Model-Routing Config `P0`
 **Branch:** `chore/opencode-openrouter-routing`
-**Topological dependencies:** Prompt 0 (OpenRouter account & API key), Prompt 1
-(`AGENTS.md` conventions)
-**Goal alignment:** Standing Item — tool-per-workload split; never hardcode a free
-model name that may not be servable that day.
-
-This has to run before any other prompt touches OpenCode, since every subsequent
-non-Antigravity, non-Figma-Make prompt in this playbook depends on it resolving to
-a real, currently-live model.
-
-**Read-first directives:**
-Read `AGENTS.md` (Prompt 1) for repo conventions before creating config. Also run
-`opencode --help` and `opencode auth --help` locally — this prompt's exact CLI
-subcommand names and config file path must be confirmed against the installed
-version rather than assumed from this document.
+**Topological dependencies:** Prompt 0 (OpenCode installed, OpenRouter account
+configured globally), Prompt 1 (`AGENTS.md` conventions)
+**Goal alignment:** Standing Item — tool-per-workload split; document the
+globally-configured routing rather than re-creating it at project level.
 
 **Context invariants:**
-- `.env` additions (template already declared in Prompt 0's `.env.example`):
-  `OPENROUTER_API_KEY` (string, required), `OPENROUTER_MODEL_PRIMARY` (string —
-  set to the exact free-tier DeepSeek-family model slug confirmed live at
-  openrouter.ai/models filtered to $0 pricing on the day this prompt is run; do
-  not assume a specific slug in advance), `OPENROUTER_MODEL_FALLBACK` (string —
-  since the account is paid, this may be a low-cost **paid** model rather than a
-  second free one; the requirement is "cheap and reliably available," not "also
-  free").
+- OpenRouter API key and model routing are already configured **globally** at
+  `~/.config/opencode/opencode.jsonc` — OpenCode manages auth internally and no
+  project-level `.env` vars are needed for AI tooling.
 - New file `AGENT_ROUTING.md` at repo root: a markdown table, columns `Prompt #`,
   `Agent`, `Model`, `Date Run`, `Notes` — a living document updated as each
-  prompt actually runs, not fully populated here beyond a header row and this
-  prompt's own entry.
+  prompt actually runs. Not a replacement for OpenCode's own config — purely an
+  audit trail for the judging submission.
 
 **Implementation instructions:**
-1. Run `opencode auth login` (or whatever subcommand `opencode --help` actually
-   reports) to connect the OpenRouter API key from `.env`.
-2. In a browser, open openrouter.ai/models, filter to $0 input/output pricing,
-   and identify the current DeepSeek-family free model (the naming pattern has
-   historically been `deepseek/deepseek-*:free`, but the exact slug rotates —
-   confirm today's live one). Record it as `OPENROUTER_MODEL_PRIMARY` in `.env`.
-3. Pick one low-cost paid model from the same provider list as
-   `OPENROUTER_MODEL_FALLBACK`; record its per-token price in `AGENT_ROUTING.md`
-   so cost stays trackable.
-4. Create `AGENT_ROUTING.md` with the table from Context Invariants; add the
-   first data row for this prompt.
-5. Configure OpenCode's project-level settings (commonly a `.opencode/` directory
-   or `opencode.json` at repo root — confirm the real path from `opencode --help`
-   / its docs rather than assuming) to default to `OPENROUTER_MODEL_PRIMARY`.
-   Append a line to `AGENTS.md` telling a human operator to manually pass
-   `OPENROUTER_MODEL_FALLBACK` if a run fails with a 429/rate-limit error.
-6. Do not commit `.env` — only `.env.example` with placeholder values stays
-   tracked.
+1. Verify OpenCode is authenticated globally by running a trivial prompt
+   ("print hello world in Python") — confirm no 401/404 model-not-found error.
+2. Create `AGENT_ROUTING.md` with the header row and seed entries for Prompts
+   0, 1, and 2.
+3. Add an `## AI Tooling` section to `AGENTS.md` noting that OpenRouter is
+   globally configured at `~/.config/opencode/opencode.jsonc` — no project-level
+   env vars needed.
+4. Remove `OPENROUTER_API_KEY`, `OPENROUTER_MODEL_PRIMARY`,
+   `OPENROUTER_MODEL_FALLBACK` from `.env.example` — they are not consumed by
+   any app code and belong to OpenCode's own global config only.
+5. Do not commit `.env`.
 
 **Security & guardrails:**
-- Local default: the API key lives only in `.env` (gitignored), never in
-  `AGENT_ROUTING.md` or any committed config file.
-- Uncertainty disclosure: if `opencode --help` reveals a config mechanism that
-  contradicts step 5's assumed file path, follow the tool's actual documented
-  mechanism and note the correction in `AGENT_ROUTING.md`'s Notes column rather
-  than silently guessing.
 - Auditability: every prompt's actual agent + model is logged in
   `AGENT_ROUTING.md`, so a teammate or judge can reconstruct which AI tool
   produced which diff.
 
 **Verification checklist:**
-- [ ] `.env` (local only, never committed) shows non-empty
-      `OPENROUTER_API_KEY`, `OPENROUTER_MODEL_PRIMARY`, `OPENROUTER_MODEL_FALLBACK`.
-- [ ] `git status` confirms `.env` is untracked/ignored and only `.env.example`
-      is staged.
-- [ ] A trivial OpenCode prompt ("print hello world in Python") run against
-      `OPENROUTER_MODEL_PRIMARY` returns a completion with no 401/404
-      model-not-found error.
-- [ ] `AGENT_ROUTING.md` exists at repo root with the header row and this
-      prompt's row filled in.
+- [ ] OpenCode returns a completion for a trivial prompt with no auth error.
+- [ ] `git status` confirms `.env` is untracked/ignored.
+- [ ] `AGENT_ROUTING.md` exists at repo root with the header row and seed
+      entries.
+- [ ] `AGENTS.md` contains an `## AI Tooling` section noting global OpenRouter
+      config.
+- [ ] `.env.example` no longer contains `OPENROUTER_API_KEY` or
+      `OPENROUTER_MODEL_*` vars.
 
-**Commit message:** `chore(tooling): configure opencode openrouter model routing with live-verified free model and paid fallback`
-**Description:** The primary/fallback split deliberately accepts a paid fallback
-instead of insisting on two free models — OpenRouter's free roster is documented
-to rotate unpredictably, the account here is already paid, and chasing a second
-free slug would cost setup time without reducing real risk.
+**Commit message:** `docs: document global opencode openrouter config, remove redundant env vars, add agent routing log`
+**Description:** OpenRouter auth and model routing live in OpenCode's global
+config (~/.config/opencode/opencode.jsonc), not in the project's .env. The
+AGENT_ROUTING.md audit trail remains at repo root for judging submission.
 
 ---
 
