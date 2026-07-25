@@ -14,6 +14,7 @@ from backend.app.models.sensor import Sensor
 from backend.app.models.reading import Reading
 from backend.app.services.risk import compute_risk_score, classify_risk, update_zone_state, record_state_transition
 from backend.app.services.seq import validate_and_advance_seq
+from backend.app.services.broadcast import manager as ws_manager
 
 router = APIRouter(tags=["ingestion"])
 
@@ -106,9 +107,16 @@ async def ingest_readings(
     # Apply state machine
     result_state, transitioned, old_state = update_zone_state(zone, new_band)
 
-    # If transition happened, record it
+    # If transition happened, record it and broadcast to dashboard
     if transitioned:
         await record_state_transition(db_session, zone.id, result_state, risk_score)
+        await ws_manager.broadcast(
+            zone_id=zone.id,
+            zone_name=zone.name,
+            current_state=result_state,
+            previous_state=old_state,
+            risk_score=risk_score,
+        )
 
     # Step 8: update last_seen_at
     zone.last_seen_at = datetime.now(timezone.utc)
