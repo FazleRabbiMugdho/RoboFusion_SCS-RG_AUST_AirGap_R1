@@ -17,4 +17,5 @@
 | 27 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | TopBar with system-state pill, connection status, & admin ack-all (PR #42) | |
 | 28 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | Critical-alert motion layer with spring entrance, audio cue, & toast stack (PR #43) | |
 | 29 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | WS offline threshold (6 retries) & forceReconnect() manual retry action (PR #44) | |
+| 30 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | Virtualized incident history view with keyset pagination & CSV export (PR #45) | |
 | **—** | **Antigravity** | **TBD** | **TBD** | **Pre-committed: Prompts 14, 17, 36, 37** | **Risk Fusion, WS Lock, ML, NL** |
