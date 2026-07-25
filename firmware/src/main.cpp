@@ -4,6 +4,7 @@
 #include "sensors/flame_gas.h"
 #include "sensors/pir.h"
 #include "sensors/water.h"
+#include "actuators/actuators.h"
 
 void setup() {
   Serial.begin(115200);
@@ -78,4 +79,5 @@ void loop() {
   }
 
   esp_task_wdt_reset();
+  delay(1);
 }
