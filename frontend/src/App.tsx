@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
-import { QueuePopulated } from "./components/scs/PriorityQueue";
+import { PriorityQueueRail } from "./components/PriorityQueueRail";
 import { RequireAuth } from "./components/RequireAuth";
 import { RequireRole } from "./components/RequireRole";
 import { useDashboardSocket } from "./hooks/useDashboardSocket";
@@ -128,7 +128,7 @@ function AppLayout() {
               Priority Queue
             </div>
             <div className="flex-1 overflow-auto p-[var(--space-4)]">
-              <QueuePopulated />
+              <PriorityQueueRail />
             </div>
           </aside>
         </div>
