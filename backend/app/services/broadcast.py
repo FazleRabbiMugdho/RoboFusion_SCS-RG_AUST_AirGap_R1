@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from fastapi import WebSocket
 
 from backend.app.schemas.enums import ZoneState
-from backend.app.schemas.ws import ZoneStateUpdate
+from backend.app.schemas.ws import RiskBreakdown, ZoneStateUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class ConnectionManager:
         current_state: ZoneState,
         previous_state: ZoneState,
         risk_score: float,
+        risk_breakdown: RiskBreakdown,
     ):
         """Broadcast zone-state update to all connected clients.
 
@@ -77,6 +78,7 @@ class ConnectionManager:
             current_state=current_state,
             previous_state=previous_state,
             risk_score=round(risk_score, 2),
+            risk_breakdown=risk_breakdown,
             triggered_at=triggered_at,
             connection_count=connection_count,
         )

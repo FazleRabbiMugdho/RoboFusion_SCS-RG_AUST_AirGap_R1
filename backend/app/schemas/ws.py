@@ -1,8 +1,17 @@
 from datetime import datetime
+from typing import TypedDict
 
 from pydantic import BaseModel
 
 from backend.app.schemas.enums import ZoneState
+
+
+class RiskBreakdown(TypedDict):
+    fire_contribution: float
+    gas_contribution: float
+    water_contribution: float
+    occupancy_multiplier_applied: float
+    total: float
 
 
 class ZoneStateUpdate(BaseModel):
@@ -18,5 +27,6 @@ class ZoneStateUpdate(BaseModel):
     current_state: ZoneState
     previous_state: ZoneState
     risk_score: float
+    risk_breakdown: RiskBreakdown
     triggered_at: datetime
     connection_count: int

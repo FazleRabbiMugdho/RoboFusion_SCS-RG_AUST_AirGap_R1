@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.incident import Incident
@@ -73,33 +75,12 @@ def classify_risk(score: float) -> ZoneState:
     return ZoneState.SAFE
 
 
-def should_transition(
-    current_state: ZoneState,
-    pending_band: ZoneState,
-    pending_count: int,
-    threshold: int = STATE_CONFIRMATION_READINGS,
-) -> bool:
-    return pending_band != current_state and pending_count >= threshold
-
-
-async def record_state_transition(
-    db_session: AsyncSession,
-    zone_id: int,
-    new_state: ZoneState,
-    risk_score: float,
-) -> None:
-    incident = Incident(
-        zone_id=zone_id,
-        status=new_state,
-        risk_score=risk_score,
-    )
-    db_session.add(incident)
-    await db_session.flush()
-
-
-def update_zone_state(zone, reading_band: ZoneState):
+def determine_zone_state(
+    zone,
+    reading_band: ZoneState,
+) -> tuple[ZoneState, ZoneState | None, int]:
     """
-    Pure state-machine step. Returns (new_current_state, transitioned, old_state).
+    Pure state-machine step. Returns (new_current_state, new_pending_band, new_pending_count).
     Caller must wrap in a DB transaction and call record_state_transition
     if transitioned is True.
     """
@@ -110,10 +91,25 @@ def update_zone_state(zone, reading_band: ZoneState):
         zone.pending_count = 1
 
     if zone.pending_count >= STATE_CONFIRMATION_READINGS and reading_band != zone.current_state:
-        old_state = zone.current_state
         zone.current_state = reading_band
         zone.pending_band = None
         zone.pending_count = 0
-        return reading_band, True, old_state
+        return reading_band, None, 0
 
-    return zone.current_state, False, zone.current_state
+    return zone.current_state, zone.pending_band, zone.pending_count
+
+
+async def record_state_transition(
+    db_session: AsyncSession,
+    zone,
+    new_state: ZoneState,
+    risk_score: float,
+) -> None:
+    incident = Incident(
+        zone_id=zone.id,
+        status=new_state,
+        risk_score=risk_score,
+    )
+    db_session.add(incident)
+    zone.state_since = datetime.now(timezone.utc)
+    await db_session.flush()
