@@ -65,6 +65,7 @@ flowchart LR
 - **Prompts 0–8:** Project context, agent routing, Antigravity bootstrap, DB schema (5 tables, native enums, composite index), Pydantic domain models, and core hardware/firmware setup.
 - **Prompt 23 (Figma UI & Tokens Merge):** Integrated Figma SCS-RG design system, two-layer design token architecture (`tokens.css`, `theme.css`), 48 UI components, status chip maps, and interactive Frame Gallery into `frontend/`.
 - **Prompt 24 (`feat/react-app-shell` / PR #38):** Built React 19 app shell with `createBrowserRouter`, in-memory `authStore` (Zustand), `uiStore`, `liveZoneStore`, root WebSocket hook `useDashboardSocket` (exponential backoff 1s–30s), `RequireAuth` & `RequireRole` route guards, role-gated `Sidebar` (omitting `System Health` from DOM for `STAFF`), `LoginView` with password peek toggle, and Vite reverse proxy (`/api` & `/ws` to `http://localhost:8000`).
+- **Prompt 25 (`feat/zone-map-view` / PR #40):** Built live zone map view (`ZoneMapView.tsx`) with Idle/Loading skeleton grid, Success real zone hydration via `GET /api/v1/zones`, Degraded hatched overlay on WS reconnect, per-zone 5s staleness check to `OFFLINE` status (with audit logging), per-tile hazard sub-indicators (fire/gas/water > 5.0, occupancy > 1.0), and inline Error banner with Retry.
 - **CI/CD Hardening:** Updated `.github/workflows/build.yml` with `--legacy-peer-deps`, created `frontend/.npmrc`, and fixed Ruff `BLE001` linter checks in `security.py`. All CI checks pass 100% green.
 
 ## Mandatory Pre-Push Directives (CRITICAL)
