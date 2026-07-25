@@ -2,6 +2,7 @@
 #include "esp_task_wdt.h"
 #include "pins.h"
 #include "sensors/flame_gas.h"
+#include "sensors/pir.h"
 
 void setup() {
   Serial.begin(115200);
@@ -47,6 +48,7 @@ void setup() {
   Serial.println("Watchdog: 30s timeout, panic mode enabled");
 
   initFlameGas();
+  initPir();
 
   Serial.println("=== Boot complete ===\n");
 }
@@ -62,12 +64,14 @@ void loop() {
 
     SensorReading flame = readFlame();
     SensorReading gas   = readGas();
+    SensorReading pir   = readOccupancy();
 
-    Serial.printf("[%u] Flame=%s Gas=%.3f%s\n",
+    Serial.printf("[%u] Flame=%s Gas=%.3f%s Occ=%s\n",
                   now / 1000,
                   flame.normalized_value > 0.5f ? "FIRE" : "OK",
                   gas.normalized_value,
-                  gas.valid ? "" : " (warming up)");
+                  gas.valid ? "" : " (warming up)",
+                  pir.normalized_value > 0.5f ? "PERSON" : "EMPTY");
   }
 
   esp_task_wdt_reset();
