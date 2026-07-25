@@ -1,0 +1,34 @@
+import os
+import asyncpg
+import pytest
+from backend.app.schemas.enums import HazardType, ZoneState, LabType, Role
+
+ENUM_MAP = {
+    "hazard_type_enum": HazardType,
+    "zone_state_enum": ZoneState,
+    "zone_lab_enum": LabType,
+    "role_enum": Role,
+}
+
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:root@localhost:5432/robofusion",
+)
+
+@pytest.mark.asyncio
+async def test_enum_labels_match_db():
+    dsn = DATABASE_URL.replace("+asyncpg", "")
+    conn = await asyncpg.connect(dsn)
+    try:
+        for pg_enum_name, py_enum_cls in ENUM_MAP.items():
+            rows = await conn.fetch(
+                "SELECT unnest(enum_range(NULL::{}))::text AS label".format(pg_enum_name)
+            )
+            db_labels = {row["label"] for row in rows}
+            py_labels = {m.value for m in py_enum_cls}
+            assert db_labels == py_labels, (
+                f"Mismatch for {pg_enum_name}: "
+                f"DB={db_labels - py_labels}, Python={py_labels - db_labels}"
+            )
+    finally:
+        await conn.close()
