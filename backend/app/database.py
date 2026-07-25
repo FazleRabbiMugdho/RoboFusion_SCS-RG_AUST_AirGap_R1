@@ -4,9 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from backend.app.models.base import Base
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable not set")
+DEFAULT_DB_URL = "sqlite+aiosqlite:///./robofusion.db"
+DATABASE_URL = os.environ.get("DATABASE_URL", DEFAULT_DB_URL)
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

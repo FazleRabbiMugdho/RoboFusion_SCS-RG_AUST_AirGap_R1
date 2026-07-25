@@ -1,0 +1,119 @@
+/*
+ * RoboFusion SCS-RG — Design Token Layer
+ * React/CSS equivalent of Prompt 4's two Figma Variable collections.
+ *
+ *   1. PRIMITIVES collection  → raw values (--p-*), never referenced directly by components.
+ *   2. SEMANTIC collection    → meaning-bound aliases (--color-status-*, --space-*, --radius-*, --text-*)
+ *                               that point at primitives. Components reference ONLY these.
+ *
+ * This two-layer indirection is the "no arbitrary values" discipline from the UI/UX
+ * System Brief's Consistency Tokens section — it is what makes Dev Mode export a token
+ * reference rather than a one-off literal.
+ */
+
+:root {
+  /* ── PRIMITIVES ─────────────────────────────────────────────── */
+  /* color primitives */
+  --p-slate-950: #0F172A;
+  --p-slate-900: #172033;
+  --p-slate-800: #1E293B;
+  --p-slate-700: #334155;
+  --p-slate-500: #64748B;
+  --p-slate-400: #94A3B8;
+  --p-slate-200: #E2E8F0;
+  --p-white:     #FFFFFF;
+  --p-green-600: #16A34A;
+  --p-amber-600: #D97706;
+  --p-red-600:   #DC2626;
+  --p-blue-500:  #3B82F6;
+  --p-indigo-500:#6366F1;
+
+  /* spacing primitives — 4px base unit (4/8/12/16/24/32/48 only) */
+  --p-space-1: 4px;
+  --p-space-2: 8px;
+  --p-space-3: 12px;
+  --p-space-4: 16px;
+  --p-space-6: 24px;
+  --p-space-8: 32px;
+  --p-space-12: 48px;
+
+  /* radius primitives */
+  --p-radius-md: 6px;
+  --p-radius-lg: 8px;
+  --p-radius-full: 9999px;
+
+  /* type-size primitives (size / line-height) */
+  --p-fs-xs: 12px;   --p-lh-xs: 16px;
+  --p-fs-sm: 14px;   --p-lh-sm: 20px;
+  --p-fs-base: 16px; --p-lh-base: 24px;
+  --p-fs-lg: 18px;   --p-lh-lg: 28px;
+  --p-fs-2xl: 24px;  --p-lh-2xl: 32px;
+
+  /* ── SEMANTIC ───────────────────────────────────────────────── */
+  /* base + surfaces */
+  --color-bg-base:        var(--p-slate-950);
+  --color-surface-raised: var(--p-slate-900);
+  --color-surface-card:   var(--p-slate-800);
+  --color-surface-border: var(--p-slate-700);
+  --color-text-primary:   var(--p-white);
+  --color-text-muted:     var(--p-slate-400);
+  --color-text-secondary: var(--p-slate-200);
+
+  /* status scale (used identically across tiles, cards, badges) */
+  --color-status-safe:     var(--p-green-600);
+  --color-status-warning:  var(--p-amber-600);
+  --color-status-critical: var(--p-red-600);
+  --color-status-offline:  var(--p-slate-500);
+  --color-status-onstatus: var(--p-white); /* text/icon on top of a status fill */
+
+  /* interaction */
+  --color-focus-ring:   var(--p-blue-500);
+  --color-acknowledged: var(--p-slate-400);
+  --color-critical-ring: rgba(220, 38, 38, 0.35);
+
+  /* forecast (deliberately shares zero hex with the status set) */
+  --color-forecast-accent: var(--p-indigo-500);
+
+  /* spacing aliases */
+  --space-1: var(--p-space-1);
+  --space-2: var(--p-space-2);
+  --space-3: var(--p-space-3);   /* inter-tile / inter-card gap */
+  --space-4: var(--p-space-4);   /* card internal padding */
+  --space-6: var(--p-space-6);   /* section separation */
+  --space-8: var(--p-space-8);   /* page outer margin */
+  --space-12: var(--p-space-12);
+
+  /* radius aliases */
+  --radius-tile: var(--p-radius-lg);   /* tiles, cards, table container */
+  --radius-control: var(--p-radius-md);/* buttons, inputs */
+  --radius-pill: var(--p-radius-full);  /* status dot, avatar */
+
+  /* layout dimensions */
+  --sidebar-collapsed: 72px;
+  --sidebar-expanded: 220px;
+  --queue-rail: 320px;
+  --topbar-height: 56px;
+
+  /* text styles */
+  --text-xs-size: var(--p-fs-xs);   --text-xs-lh: var(--p-lh-xs);
+  --text-sm-size: var(--p-fs-sm);   --text-sm-lh: var(--p-lh-sm);
+  --text-base-size: var(--p-fs-base); --text-base-lh: var(--p-lh-base);
+  --text-lg-size: var(--p-fs-lg);   --text-lg-lh: var(--p-lh-lg);
+  --text-2xl-size: var(--p-fs-2xl); --text-2xl-lh: var(--p-lh-2xl);
+}
+
+/* ── Five text styles (tabular figures enabled for telemetry) ──── */
+.ts-xs   { font-size: var(--text-xs-size);   line-height: var(--text-xs-lh); }
+.ts-sm   { font-size: var(--text-sm-size);   line-height: var(--text-sm-lh); }
+.ts-base { font-size: var(--text-base-size); line-height: var(--text-base-lh); }
+.ts-lg   { font-size: var(--text-lg-size);   line-height: var(--text-lg-lh); }
+.ts-2xl  { font-size: var(--text-2xl-size);  line-height: var(--text-2xl-lh); }
+
+/* tabular-lining figures for all numeric telemetry (risk scores, timestamps, readings) */
+.ts-num  { font-family: "JetBrains Mono", "Inter", monospace; font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+
+/* focus ring — every interactive element, never the browser default */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
