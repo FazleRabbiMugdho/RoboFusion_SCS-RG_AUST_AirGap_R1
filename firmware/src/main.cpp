@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "esp_task_wdt.h"
 #include "pins.h"
+#include "sensors/flame_gas.h"
 
 void setup() {
   Serial.begin(115200);
@@ -45,12 +46,29 @@ void setup() {
   esp_task_wdt_add(NULL);
   Serial.println("Watchdog: 30s timeout, panic mode enabled");
 
+  initFlameGas();
+
   Serial.println("=== Boot complete ===\n");
 }
 
+static const uint32_t POLL_INTERVAL_MS = 500;
+
 void loop() {
-  // Main loop — sensor polls will be added by Prompts 10-13.
-  // The mandatory delay(1) yield will be added alongside in Prompt 13.
+  static uint32_t last_poll = 0;
+  uint32_t now = millis();
+
+  if (now - last_poll >= POLL_INTERVAL_MS) {
+    last_poll = now;
+
+    SensorReading flame = readFlame();
+    SensorReading gas   = readGas();
+
+    Serial.printf("[%u] Flame=%s Gas=%.3f%s\n",
+                  now / 1000,
+                  flame.normalized_value > 0.5f ? "FIRE" : "OK",
+                  gas.normalized_value,
+                  gas.valid ? "" : " (warming up)");
+  }
 
   esp_task_wdt_reset();
 }
