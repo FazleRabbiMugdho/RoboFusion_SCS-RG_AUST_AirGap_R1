@@ -24,6 +24,11 @@ export interface RankedZoneOut {
   acknowledged_by_username: string | null;
 }
 
+interface PriorityQueueRailProps {
+  onRankedDataChange?: (zones: RankedZoneOut[]) => void;
+  refetchRef?: React.MutableRefObject<(() => void) | null>;
+}
+
 const CARD_MIN_H = 128; // px
 
 function formatElapsed(seconds: number): string {
@@ -160,7 +165,7 @@ function RankedCard({
   );
 }
 
-export function PriorityQueueRail() {
+export function PriorityQueueRail({ onRankedDataChange, refetchRef }: PriorityQueueRailProps) {
   const [rankedZones, setRankedZones] = useState<RankedZoneOut[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastChangeTime, setLastChangeTime] = useState<string | null>(null);
@@ -206,13 +211,20 @@ export function PriorityQueueRail() {
 
       prevIdsRef.current = currentIds;
       setRankedZones(zonesList);
+      onRankedDataChange?.(zonesList);
       setLastChangeTime(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Error fetching priority ranking:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token, onRankedDataChange]);
+
+  useEffect(() => {
+    if (refetchRef) {
+      refetchRef.current = fetchPriorityRanking;
+    }
+  }, [refetchRef, fetchPriorityRanking]);
 
   // Initial fetch on mount
   useEffect(() => {
