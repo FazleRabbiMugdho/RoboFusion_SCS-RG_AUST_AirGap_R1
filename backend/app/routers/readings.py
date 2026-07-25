@@ -5,22 +5,33 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from backend.app.schemas.enums import HazardType, ZoneState
 from backend.app.schemas.readings import ZoneIngestionPayload
 from backend.app.models.zone import Zone
 from backend.app.models.sensor import Sensor
 from backend.app.models.reading import Reading
-from backend.app.services.risk import compute_risk_score, classify_risk, update_zone_state, record_state_transition
+from backend.app.services.risk import (
+    compute_risk_score,
+    compute_risk_breakdown,
+    classify_risk,
+    update_zone_state,
+    record_state_transition,
+)
 from backend.app.services.seq import validate_and_advance_seq
 from backend.app.services.broadcast import manager as ws_manager
+from backend.app.database import get_db
 
 router = APIRouter(tags=["ingestion"])
 
 
-async def get_db() -> AsyncSession:  # placeholder — wired in Prompt 22
-    raise NotImplementedError("DB session dependency not wired yet")
+def normalize_raw_value(raw: float) -> float:
+    """Clamp raw sensor value to [0.0, 1.0] range."""
+    if raw < 0.0:
+        return 0.0
+    if raw > 1.0:
+        return 1.0
+    return raw
 
 
 @router.post("/zones/{zone_id}/readings")
@@ -68,12 +79,13 @@ async def ingest_readings(
             db_session.add(sensor)
             await db_session.flush()
 
-        # Insert reading row
+        # Insert reading row with normalized value
+        normalized = normalize_raw_value(reading_in.raw_value)
         reading = Reading(
             sensor_id=sensor.id,
             seq_num=payload.seq_num,
             raw_value=reading_in.raw_value,
-            normalized_value=reading_in.raw_value,
+            normalized_value=normalized,
         )
         db_session.add(reading)
 
@@ -82,7 +94,7 @@ async def ingest_readings(
     for ht in HazardType:
         if any(r.hazard_type == ht for r in payload.readings):
             r = next(r for r in payload.readings if r.hazard_type == ht)
-            hazard_values[ht] = r.raw_value
+            hazard_values[ht] = normalize_raw_value(r.raw_value)
         else:
             last = await db_session.execute(
                 select(Reading.normalized_value)
@@ -94,11 +106,21 @@ async def ingest_readings(
             last_val = last.scalar()
             hazard_values[ht] = last_val if last_val is not None else 0.0
 
+    occupied = hazard_values[HazardType.OCCUPANCY] >= 0.5
+
     risk_score = compute_risk_score(
         hazard_values[HazardType.FLAME],
         hazard_values[HazardType.GAS],
         hazard_values[HazardType.WATER],
-        hazard_values[HazardType.OCCUPANCY],
+        occupied,
+    )
+
+    # Compute risk breakdown for broadcast and storage
+    risk_breakdown = compute_risk_breakdown(
+        hazard_values[HazardType.FLAME],
+        hazard_values[HazardType.GAS],
+        hazard_values[HazardType.WATER],
+        occupied,
     )
 
     # Determine new state band from risk score
@@ -117,6 +139,10 @@ async def ingest_readings(
             previous_state=old_state,
             risk_score=risk_score,
         )
+        zone.state_since = datetime.now(timezone.utc)
+
+    # Update last_risk_breakdown on every accepted reading
+    zone.last_risk_breakdown = risk_breakdown
 
     # Step 8: update last_seen_at
     zone.last_seen_at = datetime.now(timezone.utc)

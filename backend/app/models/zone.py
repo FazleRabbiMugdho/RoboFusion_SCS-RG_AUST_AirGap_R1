@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, SmallInteger, String, BigInteger, DateTime, Enum as SAEnum
+from sqlalchemy import Column, Integer, SmallInteger, String, BigInteger, DateTime, Enum as SAEnum, JSON
 from sqlalchemy.sql import func
 from backend.app.models.base import Base
 from backend.app.schemas.enums import ZoneState, LabType
@@ -14,4 +14,6 @@ class Zone(Base):
     pending_count = Column(SmallInteger, nullable=False, default=0)
     last_accepted_seq = Column(BigInteger, nullable=False, default=0)
     last_seen_at = Column(DateTime(timezone=True), nullable=True)
+    state_since = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    last_risk_breakdown = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

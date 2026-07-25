@@ -1,6 +1,6 @@
 import os
-import asyncpg
 import pytest
+import asyncpg
 from backend.app.schemas.enums import HazardType, ZoneState, LabType, Role
 
 ENUM_MAP = {
@@ -14,6 +14,7 @@ DATABASE_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql+asyncpg://postgres:root@localhost:5432/robofusion",
 )
+
 
 @pytest.mark.asyncio
 async def test_enum_labels_match_db():
@@ -32,3 +33,20 @@ async def test_enum_labels_match_db():
             )
     finally:
         await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_zone_state_enum_values():
+    """Verify ZoneState enum has correct values."""
+    assert ZoneState.SAFE == "SAFE"
+    assert ZoneState.WARNING == "WARNING"
+    assert ZoneState.CRITICAL == "CRITICAL"
+
+
+@pytest.mark.asyncio
+async def test_hazard_type_enum_values():
+    """Verify HazardType enum has correct values."""
+    assert HazardType.FLAME == "FLAME"
+    assert HazardType.GAS == "GAS"
+    assert HazardType.WATER == "WATER"
+    assert HazardType.OCCUPANCY == "OCCUPANCY"
