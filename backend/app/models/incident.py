@@ -3,7 +3,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
 
 from backend.app.models.base import Base
-from backend.app.schemas.enums import ZoneState
+from backend.app.schemas.enums import HazardType, ZoneState
 
 
 class Incident(Base):
@@ -11,6 +11,7 @@ class Incident(Base):
     id = Column(BigInteger, primary_key=True)
     zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
     status = Column(SAEnum(ZoneState), nullable=False)
+    primary_hazard_type = Column(SAEnum(HazardType), nullable=True)
     risk_score = Column(Double, nullable=False)
     triggered_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     acknowledged_by = Column(Integer, ForeignKey("users.id"), nullable=True)

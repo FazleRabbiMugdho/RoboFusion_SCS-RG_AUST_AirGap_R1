@@ -104,10 +104,21 @@ async def record_state_transition(
     zone,
     new_state: ZoneState,
     risk_score: float,
+    risk_breakdown: dict,
 ) -> None:
+    contributions = {
+        HazardType.FLAME: risk_breakdown.get("fire_contribution", 0.0),
+        HazardType.GAS: risk_breakdown.get("gas_contribution", 0.0),
+        HazardType.WATER: risk_breakdown.get("water_contribution", 0.0),
+    }
+
+    max_hazard = max(contributions, key=contributions.get)
+    primary_hazard = max_hazard if contributions[max_hazard] > 0 else None
+
     incident = Incident(
         zone_id=zone.id,
         status=new_state,
+        primary_hazard_type=primary_hazard,
         risk_score=risk_score,
     )
     db_session.add(incident)

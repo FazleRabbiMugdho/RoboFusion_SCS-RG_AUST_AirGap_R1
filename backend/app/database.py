@@ -1,5 +1,6 @@
 import os
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.app.models.base import Base
@@ -22,3 +23,7 @@ async def get_db() -> AsyncSession:
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            await conn.execute(text("ALTER TABLE incidents ADD COLUMN primary_hazard_type VARCHAR NULL"))
+        except Exception:  # noqa: BLE001, S110
+            pass  # Column already exists or table freshly created
