@@ -23,11 +23,17 @@ export function useDashboardSocket() {
   const reconnectTimeoutRef = useRef<number | null>(null);
   const backoffMsRef = useRef<number>(1000);
   const consecutiveFailuresRef = useRef<number>(0);
-  const isManuallyClosedRef = useRef<boolean>(false);
+
+  // Use refs for store callbacks to keep connect reference stable across re-renders
+  const setConnectionStatusRef = useRef(setConnectionStatus);
+  setConnectionStatusRef.current = setConnectionStatus;
+
+  const applyZoneUpdateRef = useRef(applyZoneUpdate);
+  applyZoneUpdateRef.current = applyZoneUpdate;
 
   const connect = useCallback(() => {
     if (!token) {
-      setConnectionStatus("offline");
+      setConnectionStatusRef.current("offline");
       return;
     }
 
@@ -37,20 +43,18 @@ export function useDashboardSocket() {
       reconnectTimeoutRef.current = null;
     }
 
-    // Close any active socket cleanly before opening a new one
+    // Close any previous socket cleanly and disown it before creating a new one
     if (socketRef.current) {
-      isManuallyClosedRef.current = true;
-      socketRef.current.close();
+      const oldWs = socketRef.current;
       socketRef.current = null;
+      oldWs.close();
     }
-
-    isManuallyClosedRef.current = false;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.port === "5173" ? "localhost:8000" : window.location.host;
     const wsUrl = `${protocol}//${host}/api/v1/ws/dashboard?token=${encodeURIComponent(token)}`;
 
-    setConnectionStatus(
+    setConnectionStatusRef.current(
       consecutiveFailuresRef.current >= OFFLINE_AFTER_CONSECUTIVE_FAILURES
         ? "offline"
         : "connecting"
@@ -60,16 +64,21 @@ export function useDashboardSocket() {
     socketRef.current = ws;
 
     ws.onopen = () => {
+      // Ignore open events from superseded sockets
+      if (socketRef.current !== ws) return;
+
       consecutiveFailuresRef.current = 0;
       backoffMsRef.current = 1000;
-      setConnectionStatus("live");
+      setConnectionStatusRef.current("live");
     };
 
     ws.onmessage = (event) => {
+      if (socketRef.current !== ws) return;
+
       try {
         const data = JSON.parse(event.data);
         if (data && data.type === "zone_state_update") {
-          applyZoneUpdate(data as ZoneStateUpdateMessage);
+          applyZoneUpdateRef.current(data as ZoneStateUpdateMessage);
         }
       } catch (err) {
         console.error("WS message parse error:", err);
@@ -77,20 +86,22 @@ export function useDashboardSocket() {
     };
 
     ws.onerror = (err) => {
+      if (socketRef.current !== ws) return;
       console.warn("WS error:", err);
     };
 
     ws.onclose = () => {
-      if (isManuallyClosedRef.current) {
+      // If this socket instance was superseded or closed by cleanup, ignore its onclose
+      if (socketRef.current !== ws) {
         return;
       }
 
       consecutiveFailuresRef.current += 1;
 
       if (consecutiveFailuresRef.current >= OFFLINE_AFTER_CONSECUTIVE_FAILURES) {
-        setConnectionStatus("offline");
+        setConnectionStatusRef.current("offline");
       } else {
-        setConnectionStatus("reconnecting");
+        setConnectionStatusRef.current("reconnecting");
       }
 
       const currentBackoff = backoffMsRef.current;
@@ -100,7 +111,7 @@ export function useDashboardSocket() {
         connect();
       }, currentBackoff);
     };
-  }, [token, setConnectionStatus, applyZoneUpdate]);
+  }, [token]);
 
   const handleForceReconnect = useCallback(() => {
     consecutiveFailuresRef.current = 0;
@@ -118,9 +129,9 @@ export function useDashboardSocket() {
   useEffect(() => {
     if (!token) {
       if (socketRef.current) {
-        isManuallyClosedRef.current = true;
-        socketRef.current.close();
+        const oldWs = socketRef.current;
         socketRef.current = null;
+        oldWs.close();
       }
       setConnectionStatus("offline");
       return;
@@ -129,14 +140,14 @@ export function useDashboardSocket() {
     connect();
 
     return () => {
-      isManuallyClosedRef.current = true;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
       if (socketRef.current) {
-        socketRef.current.close();
+        const oldWs = socketRef.current;
         socketRef.current = null;
+        oldWs.close();
       }
     };
   }, [token, connect, setConnectionStatus]);
