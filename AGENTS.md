@@ -60,6 +60,21 @@ flowchart LR
 - One feature per branch, branch prefixes matching commit types
 - Branch from `main`, merge back via PR
 
+## Work Completed So Far
+
+- **Prompts 0–8:** Project context, agent routing, Antigravity bootstrap, DB schema (5 tables, native enums, composite index), Pydantic domain models, and core hardware/firmware setup.
+- **Prompt 23 (Figma UI & Tokens Merge):** Integrated Figma SCS-RG design system, two-layer design token architecture (`tokens.css`, `theme.css`), 48 UI components, status chip maps, and interactive Frame Gallery into `frontend/`.
+- **Prompt 24 (`feat/react-app-shell` / PR #38):** Built React 19 app shell with `createBrowserRouter`, in-memory `authStore` (Zustand), `uiStore`, `liveZoneStore`, root WebSocket hook `useDashboardSocket` (exponential backoff 1s–30s), `RequireAuth` & `RequireRole` route guards, role-gated `Sidebar` (omitting `System Health` from DOM for `STAFF`), `LoginView` with password peek toggle, and Vite reverse proxy (`/api` & `/ws` to `http://localhost:8000`).
+- **Prompt 25 (`feat/zone-map-view` / PR #40):** Built live zone map view (`ZoneMapView.tsx`) with Idle/Loading skeleton grid, Success real zone hydration via `GET /api/v1/zones`, Degraded hatched overlay on WS reconnect, per-zone 5s staleness check to `OFFLINE` status (with audit logging), per-tile hazard sub-indicators (fire/gas/water > 5.0, occupancy > 1.0), and inline Error banner with Retry.
+- **CI/CD Hardening:** Updated `.github/workflows/build.yml` with `--legacy-peer-deps`, created `frontend/.npmrc`, and fixed Ruff `BLE001` linter checks in `security.py`. All CI checks pass 100% green.
+
+## Mandatory Pre-Push Directives (CRITICAL)
+
+- **ALWAYS check CI/CD workflows locally before pushing:** Before making any git commit or pushing to remote, the agent MUST run and verify local build/lint commands:
+  - Backend: `python -m ruff check backend/`
+  - Frontend: `npm run build` inside `frontend/`
+- Do NOT push any branch until both checks pass cleanly with 0 errors.
+
 ## AI Tooling
 
 - **OpenCode**: primary agent. OpenRouter is authenticated globally via `opencode auth` (stores in `~/.local/share/opencode/auth.json`) — no project-level env vars needed.
@@ -80,14 +95,16 @@ flowchart LR
 
 ## CI
 
-- PRs into `main` must pass the build workflow (`.github/workflows/build.yml`)
-- Branch-protection rule must be toggled manually in repo settings
+- PRs into `main` must pass the build workflow (`.github/workflows/build.yml`).
+- **Agents must always execute local lint/build validation prior to pushing.**
+- Branch-protection rule must be toggled manually in repo settings.
 
 ## Do Not
 
-- Don't store JWTs in `localStorage` — use httpOnly cookies or session storage
-- Don't use a naive `for ws in connections: await ws.send()` broadcast loop — use a lock or per-client task
-- Don't use SELECT-then-INSERT for acknowledgment writes — use `ON CONFLICT DO NOTHING`
-- Don't leave the water-level sensor's VCC pin continuously energized — duty-cycle via `WATER_POWER_PIN`
-- Don't skip the ESP32 watchdog's `delay(1)` loop yield
-- Don't route risk-fusion formula, priority sort, or duplicate-sequence check through an LLM call — all three are deterministic arithmetic/comparison
+- Don't push code without running local linter (`ruff check backend/`) and build (`npm run build`) checks first.
+- Don't store JWTs in `localStorage` — use httpOnly cookies or in-memory Zustand store.
+- Don't use a naive `for ws in connections: await ws.send()` broadcast loop — use a lock or per-client task.
+- Don't use SELECT-then-INSERT for acknowledgment writes — use `ON CONFLICT DO NOTHING`.
+- Don't leave the water-level sensor's VCC pin continuously energized — duty-cycle via `WATER_POWER_PIN`.
+- Don't skip the ESP32 watchdog's `delay(1)` loop yield.
+- Don't route risk-fusion formula, priority sort, or duplicate-sequence check through an LLM call — all three are deterministic arithmetic/comparison.
