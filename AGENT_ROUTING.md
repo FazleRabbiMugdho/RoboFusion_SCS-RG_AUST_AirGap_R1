@@ -14,4 +14,5 @@
 | 24 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | React App Shell, Zustand stores, router, WS hook, auth/role guards (PR #38) | |
 | 25 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | Live Zone Map view with idle/success/degraded/offline/error states (PR #40) | |
 | 26 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | Persistent Priority Queue Rail with debounced WS refetch & ack (PR #41) | |
+| 27 | Antigravity | Gemini 3.6 Flash | 2026-07-26 | TopBar with system-state pill, connection status, & admin ack-all (PR #42) | |
 | **—** | **Antigravity** | **TBD** | **TBD** | **Pre-committed: Prompts 14, 17, 36, 37** | **Risk Fusion, WS Lock, ML, NL** |
