@@ -1,6 +1,12 @@
 #include <WiFi.h>
 #include "wifi_manager.h"
-#include "secrets.h"
+
+#ifdef WOKWI_SIM
+  #define WIFI_SSID "Wokwi-GUEST"
+  #define WIFI_PASSWORD ""
+#else
+  #include "secrets.h"
+#endif
 
 static unsigned long last_reconnect_attempt = 0;
 static unsigned long current_backoff = RECONNECT_BASE_MS;
@@ -50,6 +56,6 @@ void ensureWiFiConnected() {
         Serial.printf("[%lu] WiFi reconnected. IP: %s\n", now / 1000, WiFi.localIP().toString().c_str());
         current_backoff = RECONNECT_BASE_MS;
     } else {
-        current_backoff = min(current_backoff * 2, RECONNECT_MAX_MS);
+        current_backoff = min(current_backoff * 2, (unsigned long)RECONNECT_MAX_MS);
     }
 }

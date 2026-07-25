@@ -10,6 +10,7 @@
 #include "network/command_server.h"
 #include "network/ingestion_client.h"
 #include "network/offline_cache.h"
+#include "secrets.h"
 
 static Preferences prefs;
 
