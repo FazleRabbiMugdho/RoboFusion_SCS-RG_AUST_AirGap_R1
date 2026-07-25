@@ -3,6 +3,7 @@ import { Flame, Wind, Droplet, Users, Unplug, AlertOctagon, RefreshCw } from "lu
 import { useLiveZoneStore } from "../store/liveZoneStore";
 import { forceReconnect } from "../hooks/useDashboardSocket";
 import { STATUS_META, type Status } from "../components/scs/status";
+import { ZONE_OFFLINE_THRESHOLD_SECONDS } from "../lib/zoneOffline";
 import type { ZoneStateUpdateMessage } from "../types/ws-messages";
 import "../styles/critical-motion.css";
 
@@ -14,7 +15,6 @@ export interface ZoneOutData {
   last_seen_at: string | null;
 }
 
-const ZONE_OFFLINE_THRESHOLD_SECONDS = 5;
 const TILE_H = 176; // px
 
 function Grid({ children }: { children: ReactNode }) {
