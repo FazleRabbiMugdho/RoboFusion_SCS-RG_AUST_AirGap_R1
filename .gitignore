@@ -10,3 +10,4 @@ venv/
 .DS_Store
 Thumbs.db
 RoboFusion_SCS-RG_Build_Playbook*.md
+firmware/.pio/
