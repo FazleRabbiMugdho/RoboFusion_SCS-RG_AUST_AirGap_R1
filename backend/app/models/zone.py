@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, SmallInteger, String, BigInteger, DateTime, Enum as SAEnum, JSON
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Integer, SmallInteger, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
+
 from backend.app.models.base import Base
-from backend.app.schemas.enums import ZoneState, LabType
+from backend.app.schemas.enums import LabType, ZoneState
+
 
 class Zone(Base):
     __tablename__ = "zones"

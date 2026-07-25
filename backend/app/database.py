@@ -1,5 +1,7 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from backend.app.models.base import Base
 
 DATABASE_URL = os.environ.get("DATABASE_URL")

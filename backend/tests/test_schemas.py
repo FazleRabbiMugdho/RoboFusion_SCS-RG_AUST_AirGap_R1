@@ -1,7 +1,9 @@
 import os
-import pytest
+
 import asyncpg
-from backend.app.schemas.enums import HazardType, ZoneState, LabType, Role
+import pytest
+
+from backend.app.schemas.enums import HazardType, LabType, Role, ZoneState
 
 ENUM_MAP = {
     "hazard_type_enum": HazardType,
@@ -23,7 +25,7 @@ async def test_enum_labels_match_db():
     try:
         for pg_enum_name, py_enum_cls in ENUM_MAP.items():
             rows = await conn.fetch(
-                "SELECT unnest(enum_range(NULL::{}))::text AS label".format(pg_enum_name)
+                f"SELECT unnest(enum_range(NULL::{pg_enum_name}))::text AS label"
             )
             db_labels = {row["label"] for row in rows}
             py_labels = {m.value for m in py_enum_cls}

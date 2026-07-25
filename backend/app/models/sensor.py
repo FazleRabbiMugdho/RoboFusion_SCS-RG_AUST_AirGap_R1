@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, ForeignKey, Enum as SAEnum, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
+
 from backend.app.models.base import Base
 from backend.app.schemas.enums import HazardType
+
 
 class Sensor(Base):
     __tablename__ = "sensors"

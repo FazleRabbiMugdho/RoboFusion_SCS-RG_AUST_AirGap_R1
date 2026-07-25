@@ -1,5 +1,7 @@
 from datetime import datetime
+
 from pydantic import BaseModel
+
 from backend.app.schemas.enums import ZoneState
 
 

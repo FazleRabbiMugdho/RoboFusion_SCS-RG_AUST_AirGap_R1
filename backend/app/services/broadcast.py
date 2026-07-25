@@ -1,9 +1,11 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
+
 from fastapi import WebSocket
-from backend.app.schemas.ws import ZoneStateUpdate
+
 from backend.app.schemas.enums import ZoneState
+from backend.app.schemas.ws import ZoneStateUpdate
 
 logger = logging.getLogger(__name__)
 
