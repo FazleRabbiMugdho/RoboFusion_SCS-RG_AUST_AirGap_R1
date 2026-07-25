@@ -8,3 +8,4 @@
 | 5 | OpenCode | DeepSeek Flash (free) | 2026-07-25 | CI build workflow + frontend scaffold |
 | 6 | OpenCode | DeepSeek Flash (free) | 2026-07-25 | ESP32 core 3.x via PlatformIO, empty sketch compiles |
 | 7 | OpenCode | DeepSeek Flash (free) | 2026-07-25 | DB schema: 5 tables, 4 native enums, composite index, CHECK constraint |
+| 8 | OpenCode | DeepSeek Flash (free) | 2026-07-25 | Pydantic schemas: enums, readings, zones, incidents + enum-drift test |
