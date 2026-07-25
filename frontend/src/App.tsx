@@ -12,6 +12,7 @@ import { ZoneMapView } from "./views/ZoneMapView";
 import { IncidentHistoryView } from "./views/IncidentHistoryView";
 import { SystemHealthView } from "./views/SystemHealthView";
 import "./styles/critical-motion.css";
+import "./styles/enhancements.css";
 
 /* App Shell Root layout containing Sidebar + TopBar + main viewport Outlet + Priority Queue Rail */
 function AppLayout() {
@@ -45,10 +46,9 @@ function AppLayout() {
           </main>
 
           <aside
-            className="shrink-0 overflow-auto border-l flex flex-col"
+            className="shrink-0 overflow-auto border-l flex flex-col glass-subtle"
             style={{
               width: "var(--queue-rail)",
-              background: "var(--color-surface-raised)",
               borderColor: "var(--color-surface-border)",
             }}
           >

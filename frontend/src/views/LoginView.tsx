@@ -53,21 +53,78 @@ export function LoginView() {
 
   return (
     <div
-      className="h-full w-full grid place-items-center p-[var(--space-4)]"
-      style={{ background: "var(--color-bg-base)", color: "var(--color-text-primary)" }}
+      className="h-full w-full grid place-items-center p-[var(--space-4)] login-bg"
+      style={{ color: "var(--color-text-primary)" }}
     >
+      {/* Floating particles effect (pure CSS) */}
       <div
-        className="w-full max-w-md rounded-[var(--radius-tile)] p-[var(--space-6)] border flex flex-col gap-[var(--space-6)] shadow-2xl"
-        style={{ background: "var(--color-surface-card)", borderColor: "var(--color-surface-border)" }}
+        className="absolute inset-0 overflow-hidden pointer-events-none"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute rounded-full animate-pulse"
+          style={{
+            width: 300,
+            height: 300,
+            top: "10%",
+            left: "15%",
+            background: "radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute rounded-full animate-pulse"
+          style={{
+            width: 400,
+            height: 400,
+            bottom: "5%",
+            right: "10%",
+            background: "radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 70%)",
+            animationDelay: "1s",
+          }}
+        />
+        <div
+          className="absolute rounded-full animate-pulse"
+          style={{
+            width: 200,
+            height: 200,
+            top: "50%",
+            right: "30%",
+            background: "radial-gradient(circle, rgba(220,38,38,0.04) 0%, transparent 70%)",
+            animationDelay: "0.5s",
+          }}
+        />
+      </div>
+
+      <div
+        className="login-card relative w-full max-w-md rounded-[var(--radius-tile)] p-[var(--space-8)] border flex flex-col gap-[var(--space-6)]"
+        style={{
+          background: "rgba(30, 41, 59, 0.7)",
+          backdropFilter: "blur(20px) saturate(160%)",
+          borderColor: "rgba(148, 163, 184, 0.12)",
+        }}
       >
         <div className="flex flex-col items-center gap-[var(--space-2)] text-center">
           <div
             className="rounded-[var(--radius-control)] grid place-items-center mb-[var(--space-2)]"
-            style={{ width: 44, height: 44, background: "var(--color-status-critical)" }}
+            style={{
+              width: 52,
+              height: 52,
+              background: "linear-gradient(135deg, var(--color-status-critical), #ef4444)",
+              boxShadow: "0 4px 20px rgba(220, 38, 38, 0.35)",
+            }}
           >
-            <ShieldCheck size={26} color="var(--color-status-onstatus)" />
+            <ShieldCheck size={28} color="var(--color-status-onstatus)" />
           </div>
-          <h1 className="ts-2xl font-bold">RoboFusion 1.0</h1>
+          <h1
+            className="ts-2xl font-bold"
+            style={{
+              background: "linear-gradient(135deg, #FFFFFF 0%, #94A3B8 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            RoboFusion 1.0
+          </h1>
           <p className="ts-sm" style={{ color: "var(--color-text-muted)" }}>
             Smart Campus Safety &amp; Response Grid
           </p>
@@ -75,7 +132,7 @@ export function LoginView() {
 
         {errorMsg && (
           <div
-            className="ts-sm flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] p-[var(--space-3)] border"
+            className="ts-sm flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] p-[var(--space-3)] border anim-fade-up"
             style={{ background: "rgba(220,38,38,0.15)", borderColor: "var(--color-status-critical)", color: "var(--color-text-primary)" }}
           >
             <AlertOctagon size={18} className="shrink-0" color="var(--color-status-critical)" />
@@ -96,11 +153,20 @@ export function LoginView() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username"
-                className="focus-ring w-full rounded-[var(--radius-control)] pl-9 pr-3 py-2 border ts-sm outline-none"
+                className="focus-ring w-full rounded-[var(--radius-control)] pl-9 pr-3 py-2.5 border ts-sm outline-none"
                 style={{
-                  background: "var(--color-surface-raised)",
-                  borderColor: "var(--color-surface-border)",
+                  background: "rgba(15, 23, 42, 0.5)",
+                  borderColor: "rgba(148, 163, 184, 0.15)",
                   color: "var(--color-text-primary)",
+                  transition: "border-color 200ms ease, box-shadow 200ms ease",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "var(--color-focus-ring)";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.15)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(148, 163, 184, 0.15)";
+                  e.target.style.boxShadow = "none";
                 }}
               />
             </div>
@@ -118,11 +184,20 @@ export function LoginView() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="focus-ring w-full rounded-[var(--radius-control)] pl-9 pr-10 py-2 border ts-sm outline-none"
+                className="focus-ring w-full rounded-[var(--radius-control)] pl-9 pr-10 py-2.5 border ts-sm outline-none"
                 style={{
-                  background: "var(--color-surface-raised)",
-                  borderColor: "var(--color-surface-border)",
+                  background: "rgba(15, 23, 42, 0.5)",
+                  borderColor: "rgba(148, 163, 184, 0.15)",
                   color: "var(--color-text-primary)",
+                  transition: "border-color 200ms ease, box-shadow 200ms ease",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "var(--color-focus-ring)";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.15)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(148, 163, 184, 0.15)";
+                  e.target.style.boxShadow = "none";
                 }}
               />
               <button
@@ -141,8 +216,13 @@ export function LoginView() {
           <button
             type="submit"
             disabled={loading}
-            className="focus-ring ts-sm font-semibold rounded-[var(--radius-control)] py-[var(--space-2)] px-[var(--space-4)] mt-[var(--space-2)] cursor-pointer transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ background: "var(--color-focus-ring)", color: "#FFFFFF" }}
+            className="focus-ring btn-lift ts-sm font-semibold rounded-[var(--radius-control)] py-[var(--space-3)] px-[var(--space-4)] mt-[var(--space-2)] cursor-pointer disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, var(--color-focus-ring), var(--color-forecast-accent))",
+              color: "#FFFFFF",
+              boxShadow: "0 4px 16px rgba(59, 130, 246, 0.3)",
+              transition: "transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease",
+            }}
           >
             {loading ? "Authenticating…" : "Sign In"}
           </button>

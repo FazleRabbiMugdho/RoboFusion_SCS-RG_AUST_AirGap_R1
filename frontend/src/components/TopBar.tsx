@@ -133,15 +133,14 @@ export function TopBar({ rankedZones = [], onRefetchPriorityQueue }: TopBarProps
 
   return (
     <header
-      className="flex items-center gap-[var(--space-4)] px-[var(--space-6)] shrink-0 border-b"
+      className="flex items-center gap-[var(--space-4)] px-[var(--space-6)] shrink-0 border-b topbar-glass"
       style={{
         height: "var(--topbar-height)",
-        background: "var(--color-surface-raised)",
         borderColor: "var(--color-surface-border)",
       }}
     >
       {/* Left Region: View Title */}
-      <span className="ts-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>
+      <span className="ts-sm font-semibold anim-slide-in" style={{ color: "var(--color-text-secondary)" }}>
         {viewTitle}
       </span>
 
@@ -149,15 +148,19 @@ export function TopBar({ rankedZones = [], onRefetchPriorityQueue }: TopBarProps
       <div className="flex-1 flex justify-center">
         <span
           className="ts-xs rounded-[var(--radius-pill)] px-[var(--space-4)] py-[var(--space-1)] inline-flex items-center gap-[var(--space-2)]"
-          style={{ background: "var(--color-surface-card)", color: "var(--color-text-secondary)" }}
+          style={{
+            background: "rgba(30, 41, 59, 0.6)",
+            backdropFilter: "blur(8px)",
+            color: "var(--color-text-secondary)",
+            border: "1px solid rgba(148, 163, 184, 0.1)",
+          }}
         >
           <span
-            className="rounded-[var(--radius-pill)] shrink-0"
+            className={`rounded-[var(--radius-pill)] shrink-0 ${connectionStatus === "live" ? "live-dot" : ""}`}
             style={{
               width: 6,
               height: 6,
               background: connMeta.token,
-              boxShadow: connectionStatus === "live" ? `0 0 0 3px color-mix(in srgb, ${connMeta.token} 25%, transparent)` : "none",
             }}
           />
           {zoneCounts.safe} zones nominal, {zoneCounts.attention} zones need attention
@@ -174,7 +177,7 @@ export function TopBar({ rankedZones = [], onRefetchPriorityQueue }: TopBarProps
         {/* Mute Toggle Icon Button */}
         <button
           onClick={toggleMute}
-          className="focus-ring rounded-[var(--radius-control)] p-[var(--space-2)] transition-colors cursor-pointer"
+          className="focus-ring btn-lift rounded-[var(--radius-control)] p-[var(--space-2)] cursor-pointer"
           style={{ color: isMuted ? "var(--color-status-warning)" : "var(--color-text-muted)" }}
           aria-label={isMuted ? "Unmute alerts" : "Mute alerts"}
           title={isMuted ? "Unmute alerts" : "Mute alerts"}
@@ -187,8 +190,12 @@ export function TopBar({ rankedZones = [], onRefetchPriorityQueue }: TopBarProps
           <button
             onClick={handleAckAll}
             disabled={isAckingAll}
-            className="focus-ring ts-xs inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] font-medium cursor-pointer hover:opacity-80 disabled:opacity-50"
-            style={{ background: "var(--color-status-critical)", color: "var(--color-status-onstatus)" }}
+            className="focus-ring btn-lift ts-xs inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] font-medium cursor-pointer disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, var(--color-status-critical), #ef4444)",
+              color: "var(--color-status-onstatus)",
+              boxShadow: "0 2px 8px rgba(220, 38, 38, 0.25)",
+            }}
             aria-label="Acknowledge all visible critical incidents"
           >
             <CheckCheck size={14} />
@@ -199,7 +206,7 @@ export function TopBar({ rankedZones = [], onRefetchPriorityQueue }: TopBarProps
         {/* Logout Button */}
         <button
           onClick={logout}
-          className="focus-ring ts-xs font-medium rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] border cursor-pointer hover:opacity-80"
+          className="focus-ring btn-lift ts-xs font-medium rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] border cursor-pointer"
           style={{ borderColor: "var(--color-surface-border)", color: "var(--color-text-muted)" }}
         >
           Logout
