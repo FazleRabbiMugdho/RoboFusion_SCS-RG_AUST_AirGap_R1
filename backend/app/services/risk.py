@@ -1,6 +1,7 @@
-from backend.app.schemas.enums import HazardType, ZoneState
-from backend.app.models.incident import Incident
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.app.models.incident import Incident
+from backend.app.schemas.enums import HazardType, ZoneState
 
 HAZARD_WEIGHTS = {
     HazardType.FLAME: 0.45,
@@ -53,8 +54,7 @@ def compute_risk_breakdown(
     base_total = fire_contribution + gas_contribution + water_contribution
     occupancy_multiplier_applied = OCCUPANCY_MULTIPLIER if occupied else 1.0
     total = base_total * occupancy_multiplier_applied
-    if total > 100.0:
-        total = 100.0
+    total = min(total, 100.0)
 
     return {
         "fire_contribution": round(fire_contribution, 2),
@@ -79,9 +79,7 @@ def should_transition(
     pending_count: int,
     threshold: int = STATE_CONFIRMATION_READINGS,
 ) -> bool:
-    if pending_band != current_state and pending_count >= threshold:
-        return True
-    return False
+    return pending_band != current_state and pending_count >= threshold
 
 
 async def record_state_transition(
@@ -97,27 +95,6 @@ async def record_state_transition(
     )
     db_session.add(incident)
     await db_session.flush()
-
-
-def compute_risk_breakdown(
-    flame_norm: float,
-    gas_norm: float,
-    water_norm: float,
-    occupied: bool,
-) -> dict:
-    fire_contribution = flame_norm * HAZARD_WEIGHTS[HazardType.FLAME] * 100.0
-    gas_contribution = gas_norm * HAZARD_WEIGHTS[HazardType.GAS] * 100.0
-    water_contribution = water_norm * HAZARD_WEIGHTS[HazardType.WATER] * 100.0
-    occupancy_multiplier = 1.15 if occupied else 1.0
-    total = (fire_contribution + gas_contribution + water_contribution) * occupancy_multiplier
-    total = max(0.0, min(100.0, total))
-    return {
-        "fire_contribution": round(fire_contribution, 2),
-        "gas_contribution": round(gas_contribution, 2),
-        "water_contribution": round(water_contribution, 2),
-        "occupancy_multiplier_applied": occupancy_multiplier,
-        "total": round(total, 2),
-    }
 
 
 def update_zone_state(zone, reading_band: ZoneState):

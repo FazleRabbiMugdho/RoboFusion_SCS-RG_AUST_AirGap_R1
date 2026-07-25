@@ -1,26 +1,28 @@
-import hmac
 import hashlib
+import hmac
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Header
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.schemas.enums import HazardType, ZoneState
-from backend.app.schemas.readings import ZoneIngestionPayload
-from backend.app.models.zone import Zone
-from backend.app.models.sensor import Sensor
+from backend.app.database import get_db
 from backend.app.models.reading import Reading
+from backend.app.models.sensor import Sensor
+from backend.app.models.zone import Zone
+from backend.app.schemas.enums import HazardType
+from backend.app.schemas.readings import ZoneIngestionPayload
+from backend.app.services.broadcast import manager as ws_manager
 from backend.app.services.risk import (
-    compute_risk_score,
-    compute_risk_breakdown,
     classify_risk,
-    update_zone_state,
+    compute_risk_breakdown,
+    compute_risk_score,
     record_state_transition,
+    update_zone_state,
 )
 from backend.app.services.seq import validate_and_advance_seq
-from backend.app.services.broadcast import manager as ws_manager
-from backend.app.database import get_db
 
 router = APIRouter(tags=["ingestion"])
 
@@ -38,15 +40,15 @@ def normalize_raw_value(raw: float) -> float:
 async def ingest_readings(
     zone_id: int,
     payload: ZoneIngestionPayload,
+    db: Annotated[AsyncSession, Depends(get_db)],
     x_zone_api_key: str = Header(..., alias="X-Zone-Api-Key"),
-    db_session: AsyncSession = Depends(get_db),
 ):
     # Step 2: path zone_id vs body zone_id
     if zone_id != payload.zone_id:
         raise HTTPException(status_code=400, detail="Path zone_id does not match body zone_id")
 
     # Step 3-4: look up zone and validate API key
-    result = await db_session.execute(
+    result = await db.execute(
         select(Zone).where(Zone.id == zone_id)
     )
     zone = result.scalar_one_or_none()
@@ -60,14 +62,14 @@ async def ingest_readings(
         raise HTTPException(status_code=401, detail="Invalid zone or API key")
 
     # Step 5: validate seq_num (with row lock inside)
-    valid = await validate_and_advance_seq(db_session, zone_id, payload.seq_num)
+    valid = await validate_and_advance_seq(db, zone_id, payload.seq_num)
     if not valid:
         raise HTTPException(status_code=409, detail="Duplicate or out-of-order sequence number")
 
     # Step 6: lazy-create sensors and insert readings
     for reading_in in payload.readings:
         # Look up or create sensor row
-        sensor_result = await db_session.execute(
+        sensor_result = await db.execute(
             select(Sensor).where(
                 Sensor.zone_id == zone_id,
                 Sensor.hazard_type == reading_in.hazard_type,
@@ -76,8 +78,8 @@ async def ingest_readings(
         sensor = sensor_result.scalar_one_or_none()
         if sensor is None:
             sensor = Sensor(zone_id=zone_id, hazard_type=reading_in.hazard_type)
-            db_session.add(sensor)
-            await db_session.flush()
+            db.add(sensor)
+            await db.flush()
 
         # Insert reading row with normalized value
         normalized = normalize_raw_value(reading_in.raw_value)
@@ -87,7 +89,7 @@ async def ingest_readings(
             raw_value=reading_in.raw_value,
             normalized_value=normalized,
         )
-        db_session.add(reading)
+        db.add(reading)
 
     # Step 7: compute risk score using last-known values for missing hazard types
     hazard_values = {}
@@ -96,7 +98,7 @@ async def ingest_readings(
             r = next(r for r in payload.readings if r.hazard_type == ht)
             hazard_values[ht] = normalize_raw_value(r.raw_value)
         else:
-            last = await db_session.execute(
+            last = await db.execute(
                 select(Reading.normalized_value)
                 .join(Sensor, Reading.sensor_id == Sensor.id)
                 .where(Sensor.zone_id == zone_id, Sensor.hazard_type == ht)
@@ -131,7 +133,7 @@ async def ingest_readings(
 
     # If transition happened, record it and broadcast to dashboard
     if transitioned:
-        await record_state_transition(db_session, zone.id, result_state, risk_score)
+        await record_state_transition(db, zone.id, result_state, risk_score)
         await ws_manager.broadcast(
             zone_id=zone.id,
             zone_name=zone.name,
@@ -146,7 +148,7 @@ async def ingest_readings(
 
     # Step 8: update last_seen_at
     zone.last_seen_at = datetime.now(timezone.utc)
-    await db_session.flush()
+    await db.flush()
 
     return {
         "zone_id": zone_id,

@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class HazardType(str, Enum):
     FLAME = "FLAME"
     GAS = "GAS"

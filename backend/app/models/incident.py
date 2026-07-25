@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, BigInteger, ForeignKey, Double, DateTime, Enum as SAEnum, Index
+from sqlalchemy import BigInteger, Column, DateTime, Double, ForeignKey, Index, Integer
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
+
 from backend.app.models.base import Base
 from backend.app.schemas.enums import ZoneState
+
 
 class Incident(Base):
     __tablename__ = "incidents"

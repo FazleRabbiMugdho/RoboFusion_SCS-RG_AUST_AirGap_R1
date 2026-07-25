@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum as SAEnum
+from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
+
 from backend.app.models.base import Base
 from backend.app.schemas.enums import Role
+
 
 class User(Base):
     __tablename__ = "users"

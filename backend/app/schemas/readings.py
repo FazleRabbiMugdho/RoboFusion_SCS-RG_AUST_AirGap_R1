@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
+
 from backend.app.schemas.enums import HazardType
+
 
 class SensorReadingIn(BaseModel):
     hazard_type: HazardType

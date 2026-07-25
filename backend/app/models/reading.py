@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, BigInteger, ForeignKey, Double, DateTime, Index
+from sqlalchemy import BigInteger, Column, DateTime, Double, ForeignKey, Index, Integer
 from sqlalchemy.sql import func
+
 from backend.app.models.base import Base
+
 
 class Reading(Base):
     __tablename__ = "readings"
