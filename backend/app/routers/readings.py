@@ -138,7 +138,7 @@ async def ingest_readings(
         zone.current_state = result_state
         zone.pending_band = new_pending_band
         zone.pending_count = new_pending_count
-        await record_state_transition(db, zone, result_state, risk_score)
+        await record_state_transition(db, zone, result_state, risk_score, risk_breakdown)
 
         if result_state == ZoneState.CRITICAL:
             command = {"buzzer": True, "led": True, "relay": True}
