@@ -3,6 +3,7 @@ import { Flame, Wind, Droplet, Users, Unplug, AlertOctagon, RefreshCw } from "lu
 import { useLiveZoneStore } from "../store/liveZoneStore";
 import { STATUS_META, type Status } from "../components/scs/status";
 import type { ZoneStateUpdateMessage } from "../types/ws-messages";
+import "../styles/critical-motion.css";
 
 export interface ZoneOutData {
   id: number;
@@ -87,6 +88,7 @@ function ZoneTile({
   const status: Status = isOffline ? "offline" : (rawState.toLowerCase() as Status);
   const meta = STATUS_META[status];
   const Icon = meta.icon;
+  const isCriticalState = rawState === "CRITICAL" && !isOffline;
 
   const hatch = "repeating-linear-gradient(45deg, rgba(148,163,184,0.14) 0, rgba(148,163,184,0.14) 6px, transparent 6px, transparent 12px)";
 
@@ -110,7 +112,7 @@ function ZoneTile({
   return (
     <TileShell
       style={{ borderColor: meta.token }}
-      className={justEnteredCritical ? "animate-critical-pulse ring-4 ring-red-500/50" : ""}
+      className={`${isCriticalState ? "critical-active" : ""} ${justEnteredCritical ? "critical-entrance" : ""}`}
     >
       <div className="flex items-center justify-between mb-[var(--space-3)]">
         <span className="ts-base font-medium truncate">{zone.name}</span>

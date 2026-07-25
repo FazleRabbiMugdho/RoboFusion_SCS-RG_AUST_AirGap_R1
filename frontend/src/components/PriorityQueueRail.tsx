@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
 import { CheckCircle2, Users, Clock, Flame, Wind, Droplet, CheckCheck } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
+import { useUIStore } from "../store/uiStore";
 import { useLiveZoneStore } from "../store/liveZoneStore";
 import { STATUS_META, type Status } from "./scs/status";
+import "../styles/critical-motion.css";
 
 export interface RankedZoneOut {
   zone_id: number;
@@ -67,7 +69,7 @@ function RankedCard({
 }: {
   z: RankedZoneOut;
   rank: number;
-  onAcknowledge: (incidentId: number) => void;
+  onAcknowledge: (z: RankedZoneOut) => void;
   isJustEntered: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -79,11 +81,12 @@ function RankedCard({
 
   const isAcked = z.acknowledged;
   const ackedUser = z.acknowledged_by_username;
+  const isCriticalState = z.current_state === "CRITICAL";
 
   const handleAckClick = async () => {
     if (!z.latest_incident_id || isAcked || isAcking) return;
     setIsAcking(true);
-    await onAcknowledge(z.latest_incident_id);
+    await onAcknowledge(z);
     setIsAcking(false);
   };
 
@@ -95,7 +98,7 @@ function RankedCard({
   return (
     <CardShell
       style={{ borderColor: isAcked ? "var(--color-acknowledged)" : meta.token }}
-      className={isJustEntered ? "animate-critical-pulse ring-2 ring-red-500/50" : ""}
+      className={`${isCriticalState ? "critical-active" : ""} ${isJustEntered ? "critical-entrance" : ""}`}
     >
       <div
         className="flex flex-col gap-[var(--space-3)] cursor-pointer"
@@ -246,19 +249,23 @@ export function PriorityQueueRail({ onRankedDataChange, refetchRef }: PriorityQu
   }, [zoneStates, fetchPriorityRanking]);
 
   // Handle Optimistic Acknowledge Action
-  const handleAcknowledge = async (incidentId: number) => {
-    if (!token) return;
+  const handleAcknowledge = async (z: RankedZoneOut) => {
+    if (!token || !z.latest_incident_id) return;
+    const incidentId = z.latest_incident_id;
 
-    // Optimistically update local state
+    // Optimistically update local state & dismiss matching toast
     setRankedZones((prev) =>
       prev
-        ? prev.map((z) =>
-            z.latest_incident_id === incidentId
-              ? { ...z, acknowledged: true, acknowledged_by_username: username || "User" }
-              : z
+        ? prev.map((item) =>
+            item.latest_incident_id === incidentId
+              ? { ...item, acknowledged: true, acknowledged_by_username: username || "User" }
+              : item
           )
         : prev
     );
+
+    // Dismiss toast for this zone immediately
+    useUIStore.getState().dismissToastForZone(String(z.zone_id));
 
     try {
       const res = await fetch(`/api/v1/incidents/${incidentId}/acknowledge`, {
