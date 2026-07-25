@@ -66,6 +66,11 @@ flowchart LR
 - **Antigravity**: reserved for Prompts 14, 17, 36, 37 (risk fusion, WebSocket lock, ML predictor, NL parser). Scarce quota.
 - **Figma Make**: Prompt 23 only (screen generation). Requires Figma Variables from Prompt 4.
 
+## CI
+
+- PRs into `main` must pass the build workflow (`.github/workflows/build.yml`)
+- Branch-protection rule must be toggled manually in repo settings
+
 ## Do Not
 
 - Don't store JWTs in `localStorage` — use httpOnly cookies or session storage
