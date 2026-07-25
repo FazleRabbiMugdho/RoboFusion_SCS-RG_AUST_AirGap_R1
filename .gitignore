@@ -10,4 +10,7 @@ venv/
 .DS_Store
 Thumbs.db
 RoboFusion_SCS-RG_Build_Playbook*.md
+*Technical_Architecture_Brief*.md
+*Topological_Phase_Map*.md
+*UI_UX_System_Brief*.md
 firmware/.pio/
