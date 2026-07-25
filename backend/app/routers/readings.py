@@ -47,8 +47,8 @@ async def ingest_readings(
     if not hmac.compare_digest(key_hash, zone.api_key_hash):
         raise HTTPException(status_code=401, detail="Invalid zone or API key")
 
-    # Step 5: validate seq_num
-    valid = await validate_and_advance_seq(db_session, zone, payload.seq_num)
+    # Step 5: validate seq_num (with row lock inside)
+    valid = await validate_and_advance_seq(db_session, zone_id, payload.seq_num)
     if not valid:
         raise HTTPException(status_code=409, detail="Duplicate or out-of-order sequence number")
 
