@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { PriorityQueueRail, type RankedZoneOut } from "./components/PriorityQueueRail";
+import { CriticalAlertMotionLayer } from "./components/CriticalAlertMotionLayer";
 import { RequireAuth } from "./components/RequireAuth";
 import { RequireRole } from "./components/RequireRole";
 import { useDashboardSocket } from "./hooks/useDashboardSocket";
@@ -10,6 +11,7 @@ import { LoginView } from "./views/LoginView";
 import { ZoneMapView } from "./views/ZoneMapView";
 import { IncidentHistoryView } from "./views/IncidentHistoryView";
 import { SystemHealthView } from "./views/SystemHealthView";
+import "./styles/critical-motion.css";
 
 /* App Shell Root layout containing Sidebar + TopBar + main viewport Outlet + Priority Queue Rail */
 function AppLayout() {
@@ -24,6 +26,9 @@ function AppLayout() {
       className="flex h-full w-full overflow-hidden"
       style={{ background: "var(--color-bg-base)", color: "var(--color-text-primary)", fontFamily: "Inter, sans-serif" }}
     >
+      {/* Centralized Critical Alert Motion Layer & Toast Stack */}
+      <CriticalAlertMotionLayer />
+
       <Sidebar />
 
       <div className="flex flex-col flex-1 min-w-0">
