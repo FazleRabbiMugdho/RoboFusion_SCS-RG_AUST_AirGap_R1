@@ -15,12 +15,12 @@ from backend.app.models.zone import Zone
 from backend.app.schemas.enums import HazardType
 from backend.app.schemas.readings import ZoneIngestionPayload
 from backend.app.services.broadcast import manager as ws_manager
-from backend.app.services.risk import (
+from backend.app.services.risk_fusion import (
     classify_risk,
     compute_risk_breakdown,
     compute_risk_score,
+    determine_zone_state,
     record_state_transition,
-    update_zone_state,
 )
 from backend.app.services.seq import validate_and_advance_seq
 
@@ -129,19 +129,25 @@ async def ingest_readings(
     new_band = classify_risk(risk_score)
 
     # Apply state machine
-    result_state, transitioned, old_state = update_zone_state(zone, new_band)
+    old_state = zone.current_state
+    result_state, new_pending_band, new_pending_count = determine_zone_state(zone, new_band)
+    transitioned = (result_state != old_state)
 
-    # If transition happened, record it and broadcast to dashboard
     if transitioned:
-        await record_state_transition(db, zone.id, result_state, risk_score)
-        await ws_manager.broadcast(
-            zone_id=zone.id,
-            zone_name=zone.name,
-            current_state=result_state,
-            previous_state=old_state,
-            risk_score=risk_score,
-        )
-        zone.state_since = datetime.now(timezone.utc)
+        zone.current_state = result_state
+        zone.pending_band = new_pending_band
+        zone.pending_count = new_pending_count
+        await record_state_transition(db, zone, result_state, risk_score)
+
+    # Broadcast to dashboard after every successful ingestion
+    await ws_manager.broadcast(
+        zone_id=zone.id,
+        zone_name=zone.name,
+        current_state=result_state,
+        previous_state=old_state,
+        risk_score=risk_score,
+        risk_breakdown=risk_breakdown,
+    )
 
     # Update last_risk_breakdown on every accepted reading
     zone.last_risk_breakdown = risk_breakdown
