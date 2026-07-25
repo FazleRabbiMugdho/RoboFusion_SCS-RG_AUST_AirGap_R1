@@ -18,14 +18,20 @@ export interface ZoneOutData {
 const TILE_H = 176; // px
 
 function Grid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-3 gap-[var(--space-3)]">{children}</div>;
+  return <div className="grid grid-cols-3 gap-[var(--space-3)] stagger-children">{children}</div>;
 }
 
 function TileShell({ children, style, className }: { children: ReactNode; style?: CSSProperties; className?: string }) {
   return (
     <div
-      className={`relative rounded-[var(--radius-tile)] p-[var(--space-4)] border-2 overflow-hidden flex flex-col transition-all ${className || ""}`}
-      style={{ height: TILE_H, background: "var(--color-surface-card)", borderColor: "var(--color-surface-border)", ...style }}
+      className={`relative rounded-[var(--radius-tile)] p-[var(--space-4)] border-2 overflow-hidden flex flex-col card-elevated ${className || ""}`}
+      style={{
+        height: TILE_H,
+        background: "rgba(30, 41, 59, 0.6)",
+        backdropFilter: "blur(8px)",
+        borderColor: "var(--color-surface-border)",
+        ...style,
+      }}
     >
       {children}
     </div>
@@ -57,9 +63,11 @@ function HazardSubIndicators({ wsUpdate }: HazardSubIndicatorsProps) {
         return (
           <div key={h.key} className="flex flex-col items-center gap-[var(--space-1)]">
             <div
-              className="grid place-items-center rounded-[var(--radius-control)] w-full py-[var(--space-1)] transition-colors"
+              className="grid place-items-center rounded-[var(--radius-control)] w-full py-[var(--space-1)]"
               style={{
-                background: h.active ? h.activeColor : "var(--color-surface-border)",
+                background: h.active ? h.activeColor : "rgba(51, 65, 85, 0.5)",
+                boxShadow: h.active ? `0 0 10px ${h.activeColor === "var(--color-status-critical)" ? "rgba(220,38,38,0.3)" : h.activeColor === "var(--color-status-warning)" ? "rgba(217,119,6,0.3)" : h.activeColor === "var(--color-focus-ring)" ? "rgba(59,130,246,0.3)" : "rgba(22,163,74,0.3)"}` : "none",
+                transition: "background 300ms ease, box-shadow 300ms ease",
               }}
             >
               <Icon size={16} color={h.active ? "var(--color-status-onstatus)" : "var(--color-text-muted)"} />
@@ -93,6 +101,9 @@ function ZoneTile({
 
   const hatch = "repeating-linear-gradient(45deg, rgba(148,163,184,0.14) 0, rgba(148,163,184,0.14) 6px, transparent 6px, transparent 12px)";
 
+  // Status-specific glow class
+  const glowClass = isOffline ? "" : isCriticalState ? "glow-critical" : rawState === "WARNING" ? "glow-warning" : rawState === "SAFE" ? "glow-safe" : "";
+
   if (isOffline) {
     return (
       <TileShell style={{ borderColor: "var(--color-status-offline)" }}>
@@ -113,7 +124,7 @@ function ZoneTile({
   return (
     <TileShell
       style={{ borderColor: meta.token }}
-      className={`${isCriticalState ? "critical-active" : ""} ${justEnteredCritical ? "critical-entrance" : ""}`}
+      className={`${glowClass} ${isCriticalState ? "critical-active" : ""} ${justEnteredCritical ? "critical-entrance" : ""}`}
     >
       <div className="flex items-center justify-between mb-[var(--space-3)]">
         <span className="ts-base font-medium truncate">{zone.name}</span>
@@ -126,7 +137,11 @@ function ZoneTile({
 
       <span
         className="ts-sm inline-flex items-center gap-[var(--space-2)] self-start rounded-[var(--radius-control)] px-[var(--space-2)] py-[2px]"
-        style={{ background: meta.token, color: "var(--color-status-onstatus)" }}
+        style={{
+          background: meta.token,
+          color: "var(--color-status-onstatus)",
+          boxShadow: `0 2px 8px ${isCriticalState ? "rgba(220,38,38,0.3)" : rawState === "WARNING" ? "rgba(217,119,6,0.25)" : "rgba(22,163,74,0.25)"}`,
+        }}
       >
         <Icon size={14} /> {meta.label}
       </span>
@@ -255,8 +270,8 @@ export function ZoneMapView() {
       <Grid>
         {[1, 2, 3, 4, 5].map((i) => (
           <TileShell key={i}>
-            <div className="h-6 w-2/3 rounded-[var(--radius-control)] animate-pulse mb-[var(--space-3)]" style={{ background: "var(--color-surface-border)" }} />
-            <div className="h-8 w-24 rounded-[var(--radius-control)] animate-pulse" style={{ background: "var(--color-surface-border)" }} />
+            <div className="h-6 w-2/3 rounded-[var(--radius-control)] shimmer mb-[var(--space-3)]" />
+            <div className="h-8 w-24 rounded-[var(--radius-control)] shimmer" />
             <HazardSubIndicators />
           </TileShell>
         ))}
@@ -266,18 +281,18 @@ export function ZoneMapView() {
 
   // 2. Error Banners (REST initial load error OR WS offline state) & Render Grid
   return (
-    <div className="flex flex-col gap-[var(--space-4)]">
+    <div className="flex flex-col gap-[var(--space-4)] anim-fade-up">
       {/* REST Initial Load Error Banner */}
       {error && (
         <div
-          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2"
-          style={{ borderColor: "var(--color-status-critical)", background: "var(--color-surface-card)" }}
+          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2 anim-fade-up"
+          style={{ borderColor: "var(--color-status-critical)", background: "rgba(220,38,38,0.08)", boxShadow: "var(--shadow-glow-critical)" }}
         >
           <AlertOctagon size={20} color="var(--color-status-critical)" />
           <span className="ts-sm flex-1">{error}</span>
           <button
             onClick={fetchZones}
-            className="focus-ring ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer hover:opacity-90"
+            className="focus-ring btn-lift ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer"
             style={{ background: "var(--color-status-critical)", color: "var(--color-status-onstatus)" }}
           >
             <RefreshCw size={14} /> Retry
@@ -288,14 +303,14 @@ export function ZoneMapView() {
       {/* WebSocket Offline Banner (Sustained connection loss) */}
       {!error && isWsOffline && (
         <div
-          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2"
-          style={{ borderColor: "var(--color-status-warning)", background: "var(--color-surface-card)" }}
+          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2 anim-fade-up"
+          style={{ borderColor: "var(--color-status-warning)", background: "rgba(217,119,6,0.08)", boxShadow: "var(--shadow-glow-warning)" }}
         >
           <AlertOctagon size={20} color="var(--color-status-warning)" />
           <span className="ts-sm flex-1">Live connection lost — still retrying automatically</span>
           <button
             onClick={() => forceReconnect()}
-            className="focus-ring ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer hover:opacity-90"
+            className="focus-ring btn-lift ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer"
             style={{ background: "var(--color-status-warning)", color: "var(--color-status-onstatus)" }}
           >
             <RefreshCw size={14} /> Retry

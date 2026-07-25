@@ -11,12 +11,24 @@ export function Sidebar() {
 
   const sidebarW = isExpanded ? "var(--sidebar-expanded)" : "var(--sidebar-collapsed)";
 
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `focus-ring nav-link-enhanced ts-sm flex items-center gap-[var(--space-3)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-2)] text-left w-full cursor-pointer ${
+      isActive
+        ? "active bg-[var(--color-surface-card)] text-[var(--color-text-primary)] font-medium"
+        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+    }`;
+
+  const labelStyle = {
+    maxWidth: isExpanded ? 160 : 0,
+    opacity: isExpanded ? 1 : 0,
+    transition: "max-width 200ms ease, opacity 160ms ease",
+  };
+
   return (
     <aside
-      className="flex flex-col shrink-0 border-r relative select-none"
+      className="flex flex-col shrink-0 border-r relative select-none glass-subtle"
       style={{
         width: sidebarW,
-        background: "var(--color-surface-raised)",
         borderColor: "var(--color-surface-border)",
         transition: "width 220ms cubic-bezier(0.4,0,0.2,1)",
       }}
@@ -28,7 +40,12 @@ export function Sidebar() {
       >
         <div
           className="rounded-[var(--radius-control)] shrink-0 grid place-items-center"
-          style={{ width: 32, height: 32, background: "var(--color-status-critical)" }}
+          style={{
+            width: 32,
+            height: 32,
+            background: "linear-gradient(135deg, var(--color-status-critical), #ef4444)",
+            boxShadow: "0 2px 10px rgba(220, 38, 38, 0.3)",
+          }}
         >
           <ShieldCheck size={18} color="var(--color-status-onstatus)" />
         </div>
@@ -38,6 +55,9 @@ export function Sidebar() {
             maxWidth: isExpanded ? 140 : 0,
             opacity: isExpanded ? 1 : 0,
             transition: "max-width 200ms ease, opacity 160ms ease",
+            background: "linear-gradient(90deg, var(--color-text-primary), var(--color-text-secondary))",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           }}
         >
           RoboFusion
@@ -46,73 +66,21 @@ export function Sidebar() {
 
       {/* nav links */}
       <nav className="flex-1 py-[var(--space-4)] flex flex-col gap-[var(--space-1)] px-[var(--space-2)] overflow-hidden">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `focus-ring ts-sm flex items-center gap-[var(--space-3)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-2)] text-left w-full cursor-pointer transition-colors ${
-              isActive ? "bg-[var(--color-surface-card)] text-[var(--color-text-primary)] font-medium" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            }`
-          }
-          title={!isExpanded ? "Zone Map" : undefined}
-        >
+        <NavLink to="/" end className={linkClass} title={!isExpanded ? "Zone Map" : undefined}>
           <Map size={18} className="shrink-0" />
-          <span
-            className="whitespace-nowrap overflow-hidden"
-            style={{
-              maxWidth: isExpanded ? 160 : 0,
-              opacity: isExpanded ? 1 : 0,
-              transition: "max-width 200ms ease, opacity 160ms ease",
-            }}
-          >
-            Zone Map
-          </span>
+          <span className="whitespace-nowrap overflow-hidden" style={labelStyle}>Zone Map</span>
         </NavLink>
 
-        <NavLink
-          to="/incidents"
-          className={({ isActive }) =>
-            `focus-ring ts-sm flex items-center gap-[var(--space-3)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-2)] text-left w-full cursor-pointer transition-colors ${
-              isActive ? "bg-[var(--color-surface-card)] text-[var(--color-text-primary)] font-medium" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            }`
-          }
-          title={!isExpanded ? "Incident History" : undefined}
-        >
+        <NavLink to="/incidents" className={linkClass} title={!isExpanded ? "Incident History" : undefined}>
           <History size={18} className="shrink-0" />
-          <span
-            className="whitespace-nowrap overflow-hidden"
-            style={{
-              maxWidth: isExpanded ? 160 : 0,
-              opacity: isExpanded ? 1 : 0,
-              transition: "max-width 200ms ease, opacity 160ms ease",
-            }}
-          >
-            Incident History
-          </span>
+          <span className="whitespace-nowrap overflow-hidden" style={labelStyle}>Incident History</span>
         </NavLink>
 
         {/* System Health link rendered strictly ONLY for ADMIN role — never rendered-and-disabled for STAFF */}
         {role === "ADMIN" && (
-          <NavLink
-            to="/admin/system-health"
-            className={({ isActive }) =>
-              `focus-ring ts-sm flex items-center gap-[var(--space-3)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-2)] text-left w-full cursor-pointer transition-colors ${
-                isActive ? "bg-[var(--color-surface-card)] text-[var(--color-text-primary)] font-medium" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-              }`
-            }
-            title={!isExpanded ? "System Health" : undefined}
-          >
+          <NavLink to="/admin/system-health" className={linkClass} title={!isExpanded ? "System Health" : undefined}>
             <Activity size={18} className="shrink-0" />
-            <span
-              className="whitespace-nowrap overflow-hidden"
-              style={{
-                maxWidth: isExpanded ? 160 : 0,
-                opacity: isExpanded ? 1 : 0,
-                transition: "max-width 200ms ease, opacity 160ms ease",
-              }}
-            >
-              System Health
-            </span>
+            <span className="whitespace-nowrap overflow-hidden" style={labelStyle}>System Health</span>
           </NavLink>
         )}
       </nav>
@@ -122,7 +90,13 @@ export function Sidebar() {
         <div className="flex items-center gap-[var(--space-3)]">
           <div
             className="rounded-[var(--radius-pill)] shrink-0 grid place-items-center ts-xs font-semibold"
-            style={{ width: 32, height: 32, background: "var(--color-surface-card)", color: "var(--color-text-secondary)" }}
+            style={{
+              width: 32,
+              height: 32,
+              background: "linear-gradient(135deg, var(--color-surface-card), var(--color-surface-border))",
+              color: "var(--color-text-secondary)",
+              boxShadow: "var(--shadow-sm)",
+            }}
           >
             {role === "ADMIN" ? "AD" : "ST"}
           </div>
@@ -143,7 +117,7 @@ export function Sidebar() {
       {/* collapse toggle */}
       <button
         onClick={toggleSidebar}
-        className="focus-ring absolute -right-3 top-1/2 -translate-y-1/2 grid place-items-center rounded-[var(--radius-pill)] border cursor-pointer"
+        className="focus-ring btn-lift absolute -right-3 top-1/2 -translate-y-1/2 grid place-items-center rounded-[var(--radius-pill)] border cursor-pointer"
         style={{
           width: 24,
           height: 24,
@@ -151,6 +125,7 @@ export function Sidebar() {
           borderColor: "var(--color-surface-border)",
           color: "var(--color-text-muted)",
           zIndex: 10,
+          boxShadow: "var(--shadow-sm)",
         }}
         aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
       >

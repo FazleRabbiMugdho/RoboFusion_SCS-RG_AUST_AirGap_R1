@@ -112,12 +112,23 @@ export function SystemHealthView() {
   };
 
   return (
-    <div className="flex flex-col h-full gap-[var(--space-4)]">
+    <div className="flex flex-col h-full gap-[var(--space-4)] anim-fade-up">
       {/* Title & Info Bar */}
       <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="ts-xl font-semibold flex items-center gap-2">
-            <ShieldCheck size={22} color="var(--color-status-safe)" /> System Health & Node Diagnostics
+            <div
+              className="grid place-items-center rounded-[var(--radius-control)]"
+              style={{
+                width: 28,
+                height: 28,
+                background: "linear-gradient(135deg, var(--color-status-safe), #22c55e)",
+                boxShadow: "0 2px 8px rgba(22,163,74,0.25)",
+              }}
+            >
+              <ShieldCheck size={16} color="var(--color-status-onstatus)" />
+            </div>
+            System Health & Node Diagnostics
           </h2>
           <p className="ts-xs" style={{ color: "var(--color-text-muted)" }}>
             Admin-only hardware node connectivity monitor and manual actuator override interface.
@@ -127,8 +138,8 @@ export function SystemHealthView() {
         <button
           onClick={fetchHealthData}
           disabled={isLoading}
-          className="focus-ring ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-2)] border font-medium cursor-pointer hover:opacity-80 disabled:opacity-40"
-          style={{ background: "var(--color-surface-card)", borderColor: "var(--color-surface-border)", color: "var(--color-text-primary)" }}
+          className="focus-ring btn-lift ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-2)] border font-medium cursor-pointer disabled:opacity-40"
+          style={{ background: "rgba(30, 41, 59, 0.6)", borderColor: "var(--color-surface-border)", color: "var(--color-text-primary)" }}
         >
           <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh Status
         </button>
@@ -137,14 +148,14 @@ export function SystemHealthView() {
       {/* Error Alert Banner */}
       {error && (
         <div
-          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2 shrink-0"
-          style={{ borderColor: "var(--color-status-critical)", background: "var(--color-surface-card)" }}
+          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2 shrink-0 anim-fade-up"
+          style={{ borderColor: "var(--color-status-critical)", background: "rgba(220,38,38,0.08)", boxShadow: "var(--shadow-glow-critical)" }}
         >
           <AlertOctagon size={20} color="var(--color-status-critical)" />
           <span className="ts-sm flex-1">{error}</span>
           <button
             onClick={fetchHealthData}
-            className="focus-ring ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer hover:opacity-90"
+            className="focus-ring btn-lift ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer"
             style={{ background: "var(--color-status-critical)", color: "var(--color-status-onstatus)" }}
           >
             <RefreshCw size={14} /> Retry
@@ -154,13 +165,17 @@ export function SystemHealthView() {
 
       {/* Table Container */}
       <div
-        className="flex-1 min-h-0 border rounded-[var(--radius-tile)] flex flex-col overflow-hidden"
-        style={{ background: "var(--color-surface-card)", borderColor: "var(--color-surface-border)" }}
+        className="flex-1 min-h-0 border rounded-[var(--radius-tile)] flex flex-col overflow-hidden card-elevated"
+        style={{
+          background: "rgba(30, 41, 59, 0.5)",
+          backdropFilter: "blur(8px)",
+          borderColor: "var(--color-surface-border)",
+        }}
       >
         {/* Table Header */}
         <div
           className="grid grid-cols-6 gap-4 px-6 py-3 border-b ts-xs font-semibold uppercase tracking-wider shrink-0"
-          style={{ borderColor: "var(--color-surface-border)", color: "var(--color-text-muted)" }}
+          style={{ borderColor: "var(--color-surface-border)", color: "var(--color-text-muted)", background: "rgba(15, 23, 42, 0.3)" }}
         >
           <div>Zone</div>
           <div>Lab Type</div>
@@ -177,20 +192,20 @@ export function SystemHealthView() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-6 gap-4 px-6 py-4 border-b items-center animate-pulse"
-                  style={{ borderColor: "var(--color-surface-border)" }}
+                  className="grid grid-cols-6 gap-4 px-6 py-4 border-b items-center"
+                  style={{ borderColor: "var(--color-surface-border)", animationDelay: `${i * 80}ms` }}
                 >
-                  <div className="h-4 w-32 rounded bg-[var(--color-surface-border)]" />
-                  <div className="h-4 w-24 rounded bg-[var(--color-surface-border)]" />
-                  <div className="h-5 w-16 rounded bg-[var(--color-surface-border)]" />
-                  <div className="h-5 w-20 rounded bg-[var(--color-surface-border)]" />
-                  <div className="h-4 w-28 rounded bg-[var(--color-surface-border)]" />
-                  <div className="h-8 w-44 rounded bg-[var(--color-surface-border)]" />
+                  <div className="h-4 w-32 rounded shimmer" />
+                  <div className="h-4 w-24 rounded shimmer" />
+                  <div className="h-5 w-16 rounded shimmer" />
+                  <div className="h-5 w-20 rounded shimmer" />
+                  <div className="h-4 w-28 rounded shimmer" />
+                  <div className="h-8 w-44 rounded shimmer" />
                 </div>
               ))}
             </div>
           ) : zones && zones.length > 0 ? (
-            <div className="flex flex-col">
+            <div className="flex flex-col stagger-children">
               {zones.map((z) => {
                 const statusKey = z.current_state.toLowerCase() as Status;
                 const meta = STATUS_META[statusKey] || STATUS_META.warning;
@@ -203,8 +218,11 @@ export function SystemHealthView() {
                 return (
                   <div
                     key={z.id}
-                    className="grid grid-cols-6 gap-4 px-6 py-4 border-b items-center hover:bg-[var(--color-surface-raised)] transition-colors ts-sm"
-                    style={{ borderColor: "var(--color-surface-border)" }}
+                    className="grid grid-cols-6 gap-4 px-6 py-4 border-b items-center table-row-hover ts-sm"
+                    style={{
+                      borderColor: "var(--color-surface-border)",
+                      transition: "background 200ms ease",
+                    }}
                   >
                     {/* Zone Name */}
                     <div className="font-medium truncate">{z.name}</div>
@@ -218,7 +236,11 @@ export function SystemHealthView() {
                     <div>
                       <span
                         className="ts-xs inline-flex items-center gap-1 rounded-[var(--radius-control)] px-2 py-0.5 font-medium"
-                        style={{ background: meta.token, color: "var(--color-status-onstatus)" }}
+                        style={{
+                          background: meta.token,
+                          color: "var(--color-status-onstatus)",
+                          boxShadow: `0 2px 6px ${statusKey === "critical" ? "rgba(220,38,38,0.25)" : statusKey === "warning" ? "rgba(217,119,6,0.2)" : "rgba(22,163,74,0.2)"}`,
+                        }}
                       >
                         {meta.label}
                       </span>
@@ -236,7 +258,11 @@ export function SystemHealthView() {
                       ) : (
                         <span
                           className="ts-xs inline-flex items-center gap-1.5 rounded-[var(--radius-control)] px-2 py-0.5 font-medium"
-                          style={{ background: "var(--color-status-safe)", color: "var(--color-status-onstatus)" }}
+                          style={{
+                            background: "var(--color-status-safe)",
+                            color: "var(--color-status-onstatus)",
+                            boxShadow: "0 2px 6px rgba(22,163,74,0.2)",
+                          }}
                         >
                           <Wifi size={12} /> Online
                         </span>
@@ -252,7 +278,7 @@ export function SystemHealthView() {
                     <div className="flex items-center gap-2">
                       {feedback ? (
                         <span
-                          className="ts-xs font-medium inline-flex items-center gap-1"
+                          className={`ts-xs font-medium inline-flex items-center gap-1 ${feedback.success ? "feedback-glow-success" : ""}`}
                           style={{ color: feedback.success ? "var(--color-status-safe)" : "var(--color-status-warning)" }}
                         >
                           {feedback.success && <CheckCheck size={14} />} {feedback.text}
@@ -262,8 +288,12 @@ export function SystemHealthView() {
                           <button
                             onClick={() => handleOverride(z.id, { buzzer: true, led: true, relay: true })}
                             disabled={isPending}
-                            className="focus-ring ts-xs inline-flex items-center gap-1 rounded-[var(--radius-control)] px-2.5 py-1 font-medium cursor-pointer hover:opacity-90 disabled:opacity-50"
-                            style={{ background: "var(--color-status-critical)", color: "var(--color-status-onstatus)" }}
+                            className="focus-ring btn-lift ts-xs inline-flex items-center gap-1 rounded-[var(--radius-control)] px-2.5 py-1 font-medium cursor-pointer disabled:opacity-50"
+                            style={{
+                              background: "linear-gradient(135deg, var(--color-status-critical), #ef4444)",
+                              color: "var(--color-status-onstatus)",
+                              boxShadow: "0 2px 6px rgba(220,38,38,0.2)",
+                            }}
                             title="Trigger buzzer, LED, and relay test sequence"
                           >
                             <Zap size={13} /> Test Alert
@@ -272,7 +302,7 @@ export function SystemHealthView() {
                           <button
                             onClick={() => handleOverride(z.id, { buzzer: false, led: false, relay: false })}
                             disabled={isPending}
-                            className="focus-ring ts-xs inline-flex items-center gap-1 rounded-[var(--radius-control)] px-2.5 py-1 font-medium border cursor-pointer hover:opacity-80 disabled:opacity-50"
+                            className="focus-ring btn-lift ts-xs inline-flex items-center gap-1 rounded-[var(--radius-control)] px-2.5 py-1 font-medium border cursor-pointer disabled:opacity-50"
                             style={{ borderColor: "var(--color-surface-border)", color: "var(--color-text-muted)" }}
                             title="Silence buzzer, LED, and relay"
                           >
