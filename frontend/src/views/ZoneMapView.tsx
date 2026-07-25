@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
 import { Flame, Wind, Droplet, Users, Unplug, AlertOctagon, RefreshCw } from "lucide-react";
 import { useLiveZoneStore } from "../store/liveZoneStore";
+import { forceReconnect } from "../hooks/useDashboardSocket";
 import { STATUS_META, type Status } from "../components/scs/status";
 import type { ZoneStateUpdateMessage } from "../types/ws-messages";
 import "../styles/critical-motion.css";
@@ -160,7 +161,8 @@ export function ZoneMapView() {
   const prevStatesRef = useRef<Record<number, string>>({});
   const prevOfflineRef = useRef<Record<number, boolean>>({});
 
-  const isDegraded = connectionStatus === "reconnecting";
+  const isDegraded = connectionStatus === "reconnecting" || connectionStatus === "offline";
+  const isWsOffline = connectionStatus === "offline";
 
   const fetchZones = useCallback(async () => {
     setIsLoading(true);
@@ -262,9 +264,10 @@ export function ZoneMapView() {
     );
   }
 
-  // 2. Error State & Render Grid
+  // 2. Error Banners (REST initial load error OR WS offline state) & Render Grid
   return (
     <div className="flex flex-col gap-[var(--space-4)]">
+      {/* REST Initial Load Error Banner */}
       {error && (
         <div
           className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2"
@@ -276,6 +279,24 @@ export function ZoneMapView() {
             onClick={fetchZones}
             className="focus-ring ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer hover:opacity-90"
             style={{ background: "var(--color-status-critical)", color: "var(--color-status-onstatus)" }}
+          >
+            <RefreshCw size={14} /> Retry
+          </button>
+        </div>
+      )}
+
+      {/* WebSocket Offline Banner (Sustained connection loss) */}
+      {!error && isWsOffline && (
+        <div
+          className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-tile)] p-[var(--space-4)] border-2"
+          style={{ borderColor: "var(--color-status-warning)", background: "var(--color-surface-card)" }}
+        >
+          <AlertOctagon size={20} color="var(--color-status-warning)" />
+          <span className="ts-sm flex-1">Live connection lost — still retrying automatically</span>
+          <button
+            onClick={() => forceReconnect()}
+            className="focus-ring ts-sm inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-control)] px-[var(--space-3)] py-[var(--space-1)] cursor-pointer hover:opacity-90"
+            style={{ background: "var(--color-status-warning)", color: "var(--color-status-onstatus)" }}
           >
             <RefreshCw size={14} /> Retry
           </button>
