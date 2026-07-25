@@ -3,6 +3,7 @@
 #include "pins.h"
 #include "sensors/flame_gas.h"
 #include "sensors/pir.h"
+#include "sensors/water.h"
 
 void setup() {
   Serial.begin(115200);
@@ -65,13 +66,15 @@ void loop() {
     SensorReading flame = readFlame();
     SensorReading gas   = readGas();
     SensorReading pir   = readOccupancy();
+    SensorReading water = readWater();
 
-    Serial.printf("[%u] Flame=%s Gas=%.3f%s Occ=%s\n",
+    Serial.printf("[%u] Flame=%s Gas=%.3f%s Occ=%s Water=%.2f\n",
                   now / 1000,
                   flame.normalized_value > 0.5f ? "FIRE" : "OK",
                   gas.normalized_value,
                   gas.valid ? "" : " (warming up)",
-                  pir.normalized_value > 0.5f ? "PERSON" : "EMPTY");
+                  pir.normalized_value > 0.5f ? "PERSON" : "EMPTY",
+                  water.normalized_value);
   }
 
   esp_task_wdt_reset();
