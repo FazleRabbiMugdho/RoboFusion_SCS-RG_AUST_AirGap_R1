@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from backend.app.schemas.enums import LabType, ZoneState
 
@@ -11,6 +11,8 @@ class ZoneOut(BaseModel):
     lab_type: LabType
     current_state: ZoneState
     last_seen_at: datetime | None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RankedZoneOut(BaseModel):
@@ -25,3 +27,5 @@ class RankedZoneOut(BaseModel):
     latest_incident_id: int | None
     acknowledged: bool
     acknowledged_by_username: str | None
+
+    model_config = ConfigDict(from_attributes=True)
