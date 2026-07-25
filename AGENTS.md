@@ -66,17 +66,10 @@ flowchart LR
 - **Antigravity**: scarce-quota fallback agent. Reserved for specific prompts only (see below).
 - **Figma Make**: Prompt 23 only (screen generation). Requires Figma Variables from Prompt 4.
 
-## AI Agent Routing
+## CI
 
-| Prompt # | Purpose | Allowed Agent |
-|----------|---------|--------------|
-| 14 | Risk Fusion | Antigravity |
-| 17 | WebSocket Broadcast Lock | Antigravity |
-| 36 | ML Predictor (Bonus 3) | Antigravity |
-| 37 | NL Incident Parser (Bonus 4) | Antigravity |
-| All others | General development | OpenCode |
-
-- Do not use Antigravity for any prompt not listed above unless all four reserved prompts are already complete and quota remains.
+- PRs into `main` must pass the build workflow (`.github/workflows/build.yml`)
+- Branch-protection rule must be toggled manually in repo settings
 
 ## Do Not
 
