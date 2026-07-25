@@ -1,31 +1,28 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
+from backend.app.core.deps import get_current_user
 from backend.app.database import get_db
 from backend.app.models.incident import Incident
+from backend.app.models.user import User
 
 router = APIRouter(tags=["incidents"])
-
-
-class AcknowledgeRequest(BaseModel):
-    user_id: int
 
 
 @router.post("/incidents/{incident_id}/acknowledge")
 async def acknowledge_incident(
     incident_id: int,
-    body: AcknowledgeRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     stmt = (
         update(Incident)
         .where(Incident.id == incident_id, Incident.acknowledged_at.is_(None))
-        .values(acknowledged_by=body.user_id, acknowledged_at=func.now())
+        .values(acknowledged_by=current_user.id, acknowledged_at=func.now())
         .returning(Incident.acknowledged_by, Incident.acknowledged_at)
     )
     result = await db.execute(stmt)

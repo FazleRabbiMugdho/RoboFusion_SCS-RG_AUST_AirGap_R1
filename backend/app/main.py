@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database import init_db
-from backend.app.routers import incidents, readings, websocket, zones
+from backend.app.routers import auth, incidents, readings, websocket, zones
 
 
 @asynccontextmanager
@@ -26,4 +26,5 @@ app.add_middleware(
 app.include_router(readings.router, prefix="/api/v1")
 app.include_router(websocket.router, prefix="/api/v1")
 app.include_router(zones.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(incidents.router, prefix="/api/v1")
