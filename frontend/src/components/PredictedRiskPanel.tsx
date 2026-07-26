@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { BrainCircuit, AlertTriangle } from "lucide-react";
 import type { ZoneHealthData } from "../views/SystemHealthView";
 import { useAuthStore } from "../store/authStore";
+import { useLiveZoneStore } from "../store/liveZoneStore";
 
 const PANEL_MODEL_READY = true;
 
@@ -17,7 +18,8 @@ interface PredictedRiskItem {
 
 function RiskBar({ zoneName, probability }: { zoneName: string; probability: number | null }) {
   const hasModel = probability !== null;
-  const pct = hasModel ? Math.round(probability * 100) : 0;
+  const pct = hasModel ? probability * 100 : 0;
+  const displayPct = pct < 1 ? pct.toFixed(2) : Math.round(pct).toString();
 
   return (
     <div
@@ -41,7 +43,7 @@ function RiskBar({ zoneName, probability }: { zoneName: string; probability: num
         <div
           className="h-full rounded-[var(--radius-control)]"
           style={{
-            width: `${pct}%`,
+            width: `${displayPct}%`,
             background: hasModel ? "var(--color-forecast-accent)" : "transparent",
             transition: "width 400ms ease",
           }}
@@ -49,7 +51,7 @@ function RiskBar({ zoneName, probability }: { zoneName: string; probability: num
       </div>
       {hasModel ? (
         <span className="ts-xs font-semibold" style={{ color: "var(--color-forecast-accent)" }}>
-          {pct}%
+          {displayPct}%
         </span>
       ) : (
         <span className="ts-xs" style={{ color: "var(--color-text-muted)" }}>
@@ -115,50 +117,57 @@ interface Props {
 
 export function PredictedRiskPanel({ zones }: Props) {
   const token = useAuthStore((state) => state.token);
+  const zoneStates = useLiveZoneStore((state) => state.zoneStates);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [predictions, setPredictions] = useState<PredictedRiskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchPredictions() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/v1/admin/zones/predicted-risk", {
-          headers: {
-            Authorization: `Bearer ${token || ""}`,
-          },
-        });
-        if (!res.ok) {
-          throw new Error(`Server returned ${res.status}`);
-        }
-        const data = await res.json();
-        if (!cancelled) {
-          setPredictions(data.predictions || []);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load predictions");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+  const fetchPredictions = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/v1/admin/zones/predicted-risk", {
+        headers: {
+          Authorization: `Bearer ${token || ""}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
       }
+      const data = await res.json();
+      setPredictions(data.predictions || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load predictions");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
     if (PANEL_MODEL_READY) {
       fetchPredictions();
     } else {
       setIsLoading(false);
     }
-
-    return () => {
-      cancelled = true;
-    };
   }, [token]);
+
+  // Debounced refresh on WS zoneStates activity
+  useEffect(() => {
+    if (!PANEL_MODEL_READY) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(fetchPredictions, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [zoneStates]);
+
+  // Periodic auto-refresh every 15s
+  useEffect(() => {
+    if (!PANEL_MODEL_READY) return;
+    const interval = setInterval(fetchPredictions, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!PANEL_MODEL_READY) {
     return (
@@ -189,7 +198,7 @@ export function PredictedRiskPanel({ zones }: Props) {
                 Predicted Risk
               </h3>
               <p className="ts-xs" style={{ color: "var(--color-text-muted)" }}>
-                Predicted &mdash; not live
+                5-min ML forecast
               </p>
             </div>
           </div>
@@ -238,7 +247,7 @@ export function PredictedRiskPanel({ zones }: Props) {
               Predicted Risk
             </h3>
             <p className="ts-xs" style={{ color: "var(--color-text-muted)" }}>
-              Predicted &mdash; not live
+              5-min ML forecast
             </p>
           </div>
         </div>

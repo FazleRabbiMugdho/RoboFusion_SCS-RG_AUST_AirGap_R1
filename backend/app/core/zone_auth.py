@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def compute_zone_api_key_hash(raw_api_key: str) -> str:
+    salt = os.environ.get("ZONE_API_KEY_SALT", "").encode("utf-8")
+    return hmac.new(salt, raw_api_key.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
 async def verify_zone_api_key(
     zone_id: int,
     x_zone_api_key: str,
@@ -38,8 +43,7 @@ async def verify_zone_api_key(
         logger.warning("verify_zone_api_key zone_not_found zone_id=%d", zone_id)
         raise HTTPException(status_code=401, detail="Invalid zone or API key")
 
-    salt = os.environ.get("ZONE_API_KEY_SALT", "").encode("utf-8")
-    key_hash = hmac.new(salt, x_zone_api_key.encode("utf-8"), hashlib.sha256).hexdigest()
+    key_hash = compute_zone_api_key_hash(x_zone_api_key)
 
     if not hmac.compare_digest(key_hash, zone.api_key_hash):
         logger.warning("verify_zone_api_key invalid_key zone_id=%d", zone_id)

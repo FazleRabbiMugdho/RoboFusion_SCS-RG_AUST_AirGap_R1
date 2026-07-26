@@ -30,7 +30,8 @@ async def get_priority_ranking(db_session: AsyncSession) -> list[dict]:
     for zone in zones:
         occupied = await _is_occupied(db_session, zone.id, now)
 
-        seconds_in_state = (now - zone.state_since).total_seconds()
+        state_since = zone.state_since if zone.state_since.tzinfo else zone.state_since.replace(tzinfo=timezone.utc)
+        seconds_in_state = (now - state_since).total_seconds()
 
         risk_breakdown = zone.last_risk_breakdown or {}
         risk_score = risk_breakdown.get("total", 0.0)

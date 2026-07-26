@@ -248,6 +248,12 @@ export function PriorityQueueRail({ onRankedDataChange, refetchRef }: PriorityQu
     };
   }, [zoneStates, fetchPriorityRanking]);
 
+  // Fallback periodic refresh every 5s to keep queue accurate
+  useEffect(() => {
+    const interval = setInterval(fetchPriorityRanking, 5000);
+    return () => clearInterval(interval);
+  }, [fetchPriorityRanking]);
+
   // Handle Optimistic Acknowledge Action
   const handleAcknowledge = async (z: RankedZoneOut) => {
     if (!token || !z.latest_incident_id) return;

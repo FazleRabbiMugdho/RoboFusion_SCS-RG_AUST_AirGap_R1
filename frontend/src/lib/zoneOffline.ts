@@ -1,4 +1,4 @@
-export const ZONE_OFFLINE_THRESHOLD_SECONDS = 5;
+export const ZONE_OFFLINE_THRESHOLD_SECONDS = 120;
 
 export function isZoneOffline(lastSeenAt: string | null): boolean {
   if (!lastSeenAt) return true;
