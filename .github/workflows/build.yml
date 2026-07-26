@@ -21,6 +21,7 @@ jobs:
         ports:
           - 5432:5432
     env:
+      PYTHONPATH: ${{ github.workspace }}
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/robofusion
       JWT_SECRET_KEY: test-jwt-secret
       ZONE_API_KEY_SALT: test-salt
@@ -34,8 +35,8 @@ jobs:
           python-version: "3.13"
       - run: pip install -r backend/requirements.txt --break-system-packages
       - run: ruff check backend/
-      - run: alembic -c backend/alembic.ini upgrade head
-      - run: pytest backend/tests -v --maxfail=1
+      - run: python -m alembic -c backend/alembic.ini upgrade head
+      - run: python -m pytest backend/tests -v --maxfail=1
 
   frontend-build:
     runs-on: ubuntu-latest
