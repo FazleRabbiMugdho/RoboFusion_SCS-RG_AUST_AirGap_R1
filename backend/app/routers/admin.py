@@ -9,10 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.deps import require_role
 from backend.app.database import get_db
+from backend.app.models.reading import Reading
+from backend.app.models.sensor import Sensor
 from backend.app.models.user import User
 from backend.app.models.zone import Zone
-from backend.app.schemas.enums import Role
+from backend.app.schemas.enums import HazardType, Role
 from backend.app.services.actuation_dispatch import dispatch_actuation_commands
+from backend.app.services.risk_predictor import predict_zone_risk
 
 ZONE_OFFLINE_THRESHOLD_SECONDS_BACKEND = 5
 
@@ -97,3 +100,54 @@ async def override_zone_actuators(
         "zone_id": zone_id,
         "dispatched": dispatched,
     }
+
+
+@router.get("/admin/zones/predicted-risk")
+async def get_predicted_risk(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_role(Role.ADMIN))],
+):
+    result = await db.execute(select(Zone).order_by(Zone.id.asc()))
+    zones = result.scalars().all()
+
+    sensors_result = await db.execute(select(Sensor))
+    sensors = sensors_result.scalars().all()
+    sensors_by_zone: dict[int, dict[HazardType, Sensor]] = {}
+    for s in sensors:
+        sensors_by_zone.setdefault(s.zone_id, {})[s.hazard_type] = s
+
+    readings_map: dict[int, dict[HazardType, float]] = {}
+    for zone_id, sensor_map in sensors_by_zone.items():
+        readings_map[zone_id] = {}
+        for ht, sensor in sensor_map.items():
+            latest = await db.execute(
+                select(Reading.normalized_value)
+                .where(Reading.sensor_id == sensor.id)
+                .order_by(Reading.received_at.desc())
+                .limit(1)
+            )
+            val = latest.scalar()
+            readings_map[zone_id][ht] = val if val is not None else 0.0
+
+    predictions = []
+    for z in zones:
+        zone_readings = readings_map.get(z.id, {})
+        fire_norm = zone_readings.get(HazardType.FLAME, 0.0)
+        gas_norm = zone_readings.get(HazardType.GAS, 0.0)
+        water_norm = zone_readings.get(HazardType.WATER, 0.0)
+        occ_norm = zone_readings.get(HazardType.OCCUPANCY, 0.0)
+        occupied = occ_norm >= 0.5
+
+        prob = predict_zone_risk(fire_norm, gas_norm, water_norm, occupied)
+
+        predictions.append({
+            "zone_id": z.id,
+            "zone_name": z.name,
+            "fire_norm": fire_norm,
+            "gas_norm": gas_norm,
+            "water_norm": water_norm,
+            "occupied": occupied,
+            "critical_probability": prob,
+        })
+
+    return {"predictions": predictions}
