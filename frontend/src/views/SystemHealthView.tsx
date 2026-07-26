@@ -3,6 +3,7 @@ import { ShieldCheck, Zap, VolumeX, AlertOctagon, CheckCheck, RefreshCw, Unplug,
 import { useAuthStore } from "../store/authStore";
 import { STATUS_META, type Status } from "../components/scs/status";
 import { isZoneOffline } from "../lib/zoneOffline";
+import { PredictedRiskPanel } from "../components/PredictedRiskPanel";
 
 export interface ZoneHealthData {
   id: number;
@@ -324,6 +325,12 @@ export function SystemHealthView() {
           )}
         </div>
       </div>
+
+      {zones && zones.length > 0 && (
+        <div className="shrink-0 anim-fade-up">
+          <PredictedRiskPanel zones={zones} />
+        </div>
+      )}
     </div>
   );
 }
