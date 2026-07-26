@@ -102,6 +102,8 @@ flowchart LR
 ## CI
 
 - PRs into `main` must pass the build workflow (`.github/workflows/build.yml`).
+- The pipeline now runs the full backend test suite (`pytest backend/tests -v`) after
+  alembic migration, superseding the earlier build-only description.
 - **Agents must always execute local lint/build validation prior to pushing.**
 - Branch-protection rule must be toggled manually in repo settings.
 

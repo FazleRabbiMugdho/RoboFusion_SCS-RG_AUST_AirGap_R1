@@ -7,6 +7,26 @@ on:
 jobs:
   backend-build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: robofusion
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      ZONE_API_KEY_SALT: ${{ secrets.ZONE_API_KEY_SALT }}
+      ADMIN_SEED_USERNAME: ${{ secrets.ADMIN_SEED_USERNAME }}
+      ADMIN_SEED_PASSWORD: ${{ secrets.ADMIN_SEED_PASSWORD }}
+      USE_LOCAL_STUB: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,6 +34,8 @@ jobs:
           python-version: "3.13"
       - run: pip install -r backend/requirements.txt --break-system-packages
       - run: ruff check backend/
+      - run: alembic -c backend/alembic.ini upgrade head
+      - run: pytest backend/tests -v --maxfail=1
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -23,6 +45,8 @@ jobs:
         with:
           node-version: "20"
       - run: npm ci --legacy-peer-deps
+        working-directory: frontend
+      - run: npx tsc --noEmit
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
