@@ -1,9 +1,12 @@
 import os
 
+from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.app.models.base import Base
+
+load_dotenv()
 
 DEFAULT_DB_URL = "sqlite+aiosqlite:///./robofusion.db"
 DATABASE_URL = os.environ.get("DATABASE_URL", DEFAULT_DB_URL)
