@@ -21,11 +21,11 @@ jobs:
         ports:
           - 5432:5432
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-      ZONE_API_KEY_SALT: ${{ secrets.ZONE_API_KEY_SALT }}
-      ADMIN_SEED_USERNAME: ${{ secrets.ADMIN_SEED_USERNAME }}
-      ADMIN_SEED_PASSWORD: ${{ secrets.ADMIN_SEED_PASSWORD }}
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/robofusion
+      JWT_SECRET_KEY: test-jwt-secret
+      ZONE_API_KEY_SALT: test-salt
+      ADMIN_SEED_USERNAME: test-admin
+      ADMIN_SEED_PASSWORD: test-password
       USE_LOCAL_STUB: "true"
     steps:
       - uses: actions/checkout@v4
