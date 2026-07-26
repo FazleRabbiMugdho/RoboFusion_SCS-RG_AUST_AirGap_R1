@@ -23,10 +23,52 @@ interface LiveZoneState {
   criticalTransitions: CriticalTransitionEvent[];
   riskScoreHistory: Record<string, RiskScoreHistoryEntry[]>;
   applyZoneUpdate: (msg: ZoneStateUpdateMessage) => void;
+  applyZoneUpdatesBatch: (messages: ZoneStateUpdateMessage[]) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
 }
 
 let nextEventId = 0;
+
+function _applySingleZoneUpdate(
+  state: LiveZoneState,
+  msg: ZoneStateUpdateMessage
+): Partial<LiveZoneState> {
+  const key = String(msg.zone_id);
+  const prevMsg = state.zoneStates[key];
+  const prevState = prevMsg?.current_state;
+  const isNewCritical = msg.current_state === "CRITICAL" && prevState !== "CRITICAL";
+
+  let nextTransitions = state.criticalTransitions;
+  if (isNewCritical) {
+    const entry: CriticalTransitionEvent = {
+      eventId: nextEventId++,
+      zoneId: key,
+      zoneName: msg.zone_name || `Zone ${msg.zone_id}`,
+      timestamp: msg.triggered_at ? new Date(msg.triggered_at).getTime() : Date.now(),
+    };
+    nextTransitions = [...state.criticalTransitions, entry];
+  }
+
+  // Ring buffer for risk score history (max TREND_WINDOW_SIZE entries per zone)
+  const history = state.riskScoreHistory[key] || [];
+  const newHistory = [...history, { score: msg.risk_score, timestamp: Date.now() }];
+  if (newHistory.length > TREND_WINDOW_SIZE) {
+    newHistory.shift();
+  }
+  const nextRiskScoreHistory = {
+    ...state.riskScoreHistory,
+    [key]: newHistory,
+  };
+
+  return {
+    zoneStates: {
+      ...state.zoneStates,
+      [key]: msg,
+    },
+    criticalTransitions: nextTransitions,
+    riskScoreHistory: nextRiskScoreHistory,
+  };
+}
 
 export const useLiveZoneStore = create<LiveZoneState>((set) => ({
   zoneStates: {},
@@ -34,42 +76,14 @@ export const useLiveZoneStore = create<LiveZoneState>((set) => ({
   criticalTransitions: [],
   riskScoreHistory: {},
   applyZoneUpdate: (msg) =>
+    set((state) => _applySingleZoneUpdate(state, msg)),
+  applyZoneUpdatesBatch: (messages) =>
     set((state) => {
-      const key = String(msg.zone_id);
-      const prevMsg = state.zoneStates[key];
-      const prevState = prevMsg?.current_state;
-      const isNewCritical = msg.current_state === "CRITICAL" && prevState !== "CRITICAL";
-
-      let nextTransitions = state.criticalTransitions;
-      if (isNewCritical) {
-        const entry: CriticalTransitionEvent = {
-          eventId: nextEventId++,
-          zoneId: key,
-          zoneName: msg.zone_name || `Zone ${msg.zone_id}`,
-          timestamp: msg.triggered_at ? new Date(msg.triggered_at).getTime() : Date.now(),
-        };
-        nextTransitions = [...state.criticalTransitions, entry];
+      let nextState = state;
+      for (const msg of messages) {
+        nextState = { ...nextState, ..._applySingleZoneUpdate(nextState, msg) };
       }
-
-      // Ring buffer for risk score history (max TREND_WINDOW_SIZE entries per zone)
-      const history = state.riskScoreHistory[key] || [];
-      const newHistory = [...history, { score: msg.risk_score, timestamp: Date.now() }];
-      if (newHistory.length > TREND_WINDOW_SIZE) {
-        newHistory.shift();
-      }
-      const nextRiskScoreHistory = {
-        ...state.riskScoreHistory,
-        [key]: newHistory,
-      };
-
-      return {
-        zoneStates: {
-          ...state.zoneStates,
-          [key]: msg,
-        },
-        criticalTransitions: nextTransitions,
-        riskScoreHistory: nextRiskScoreHistory,
-      };
+      return nextState;
     }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 }));
