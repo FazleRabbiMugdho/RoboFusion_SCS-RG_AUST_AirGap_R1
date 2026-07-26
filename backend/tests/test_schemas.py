@@ -1,6 +1,5 @@
 import os
 
-import asyncpg
 import pytest
 
 from backend.app.schemas.enums import HazardType, LabType, Role, ZoneState
@@ -20,7 +19,12 @@ DATABASE_URL = os.environ.get(
 
 @pytest.mark.asyncio
 async def test_enum_labels_match_db():
+    # Skip if using SQLite (not PostgreSQL)
     dsn = DATABASE_URL.replace("+asyncpg", "")
+    if dsn.startswith("sqlite"):
+        pytest.skip("Test requires PostgreSQL database")
+
+    import asyncpg
     conn = await asyncpg.connect(dsn)
     try:
         for pg_enum_name, py_enum_cls in ENUM_MAP.items():
