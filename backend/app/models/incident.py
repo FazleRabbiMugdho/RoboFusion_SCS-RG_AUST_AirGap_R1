@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, DateTime, Double, ForeignKey, Index, Integer
+from sqlalchemy import Column, DateTime, Double, ForeignKey, Index, Integer
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
 
@@ -8,7 +8,7 @@ from backend.app.schemas.enums import HazardType, ZoneState
 
 class Incident(Base):
     __tablename__ = "incidents"
-    id = Column(BigInteger, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
     status = Column(SAEnum(ZoneState), nullable=False)
     primary_hazard_type = Column(SAEnum(HazardType), nullable=True)
