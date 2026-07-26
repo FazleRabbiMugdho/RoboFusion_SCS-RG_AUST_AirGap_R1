@@ -1,8 +1,12 @@
 import base64
+import json
+import logging
+import os
 from datetime import date, datetime, time, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
@@ -13,8 +17,13 @@ from backend.app.models.incident import Incident
 from backend.app.models.user import User
 from backend.app.models.zone import Zone
 from backend.app.schemas.enums import HazardType, ZoneState
+from backend.app.schemas.readings import SensorReadingIn
+from backend.app.services.ingestion_pipeline import ingest_zone_reading
+from backend.app.services.nl_parser import NL_CONFIDENCE_FLOOR, parse_incident_text
+from backend.app.services.nl_stub import parse_incident_text_stub
 
 router = APIRouter(tags=["incidents"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/incidents")
@@ -127,6 +136,7 @@ async def acknowledge_incident(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
+    # Use UPDATE with RETURNING for atomic check-and-set
     stmt = (
         update(Incident)
         .where(Incident.id == incident_id, Incident.acknowledged_at.is_(None))
@@ -138,6 +148,7 @@ async def acknowledge_incident(
 
     if row is not None:
         acked_by, acked_at = row
+        await db.commit()
         return {
             "status": "acknowledged",
             "incident_id": incident_id,
@@ -159,3 +170,108 @@ async def acknowledge_incident(
         "acknowledged_by": incident.acknowledged_by,
         "acknowledged_at": incident.acknowledged_at.isoformat() if incident.acknowledged_at else None,
     }
+
+
+class NLReportIn(BaseModel):
+    free_text: str = Field(max_length=500)
+
+
+class NLReportOut(BaseModel):
+    status: Literal["accepted"]
+    zone_id: int
+    zone_name: str
+    hazard_type: HazardType
+    severity: float
+    zone_state: ZoneState
+    risk_score: float
+
+
+@router.post("/incidents/report-nl", response_model=NLReportOut)
+async def report_nl_incident(
+    payload: NLReportIn,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    free_text = payload.free_text.strip()
+    if not free_text:
+        raise HTTPException(
+            status_code=422,
+            detail="couldn't confidently parse that report — please use the standard incident form",
+        )
+
+    use_stub = os.environ.get("USE_LOCAL_STUB", "false").lower() == "true"
+
+    try:
+        if use_stub:
+            parsed = parse_incident_text_stub(free_text)
+            parser_source = "stub"
+        else:
+            parsed = await parse_incident_text(free_text)
+            parser_source = "gemini"
+    except (json.JSONDecodeError, ValueError, KeyError, AttributeError) as e:
+        logger.warning("NL parse failed for user_id=%s text=%r exc=%s",
+                       current_user.id, free_text[:200], e)
+        if not use_stub:
+            raise HTTPException(
+                status_code=503,
+                detail="NL reporting is temporarily unavailable — please use the standard incident form",
+            )
+        parsed = parse_incident_text_stub(free_text)
+        parser_source = "stub_fallback"
+
+    logger.info("NL report user_id=%s parser=%s text=%r parsed=%s",
+                current_user.id, parser_source, free_text[:200], parsed)
+
+    if parsed is None:
+        raise HTTPException(
+            status_code=422,
+            detail="couldn't confidently parse that report — please use the standard incident form",
+        )
+
+    if parsed["confidence"] < NL_CONFIDENCE_FLOOR:
+        logger.info("NL confidence too low: %.2f < %.2f", parsed["confidence"], NL_CONFIDENCE_FLOOR)
+        raise HTTPException(
+            status_code=422,
+            detail="couldn't confidently parse that report — please use the standard incident form",
+        )
+
+    # Look up zone by name
+    zone_result = await db.execute(select(Zone).where(Zone.name == parsed["zone_name"]))
+    zone = zone_result.scalar_one_or_none()
+    if zone is None:
+        logger.warning("NL zone not found: %s", parsed["zone_name"])
+        raise HTTPException(
+            status_code=422,
+            detail="couldn't confidently parse that report — please use the standard incident form",
+        )
+
+    # Get next seq_num under row lock
+    from sqlalchemy import select as sa_select
+    result = await db.execute(
+        sa_select(Zone)
+        .where(Zone.id == zone.id)
+        .with_for_update()
+    )
+    locked_zone = result.scalar_one()
+    next_seq = locked_zone.last_accepted_seq + 1
+    locked_zone.last_accepted_seq = next_seq
+    await db.flush()
+
+    # Build a single SensorReadingIn for the extracted hazard type
+    reading = SensorReadingIn(
+        hazard_type=parsed["hazard_type"],
+        raw_value=parsed["severity"],
+        seq_num=next_seq,
+    )
+
+    result = await ingest_zone_reading(db, zone, next_seq, [reading])
+
+    return NLReportOut(
+        status="accepted",
+        zone_id=zone.id,
+        zone_name=zone.name,
+        hazard_type=parsed["hazard_type"],
+        severity=parsed["severity"],
+        zone_state=result["zone_state"],
+        risk_score=result["risk_score"],
+    )

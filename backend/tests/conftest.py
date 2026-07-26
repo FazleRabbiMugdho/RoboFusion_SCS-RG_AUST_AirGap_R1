@@ -1,8 +1,9 @@
-import asyncio
 import os
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Set test database URL before importing app
 TEST_DB_PATH = "test_rbac.db"
@@ -23,36 +24,18 @@ importlib.reload(backend.app.core.security)
 from backend.app.core.security import create_access_token, hash_password
 from backend.app.database import Base, async_session_maker
 from backend.app.main import app
+from backend.app.models.user import User
 from backend.app.schemas.enums import Role
 
 client = TestClient(app)
 
 
-def pytest_sessionstart(session):
-    """Set up test database before all tests."""
-    os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
-    
-    # Re-import modules with new DATABASE_URL
-    import importlib
-
-    import backend.app.database
-    importlib.reload(backend.app.database)
-    import backend.app.main
-    importlib.reload(backend.app.main)
-    import backend.app.core.security
-    importlib.reload(backend.app.core.security)
-    
-    # Initialize database
-    asyncio.run(init_test_db())
-
-
-async def init_test_db():
-    """Initialize test database with schema and test users."""
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_test_db():
+    """Set up test database once per session."""
     from backend.app.database import engine
-    from backend.app.models.user import User
-    from backend.app.schemas.enums import Role
     
-    # Drop all tables and recreate
+    # Create tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -74,13 +57,24 @@ async def init_test_db():
         await db.commit()
         await db.refresh(admin_user)
         await db.refresh(staff_user)
-
-
-def pytest_sessionfinish(session, exitstatus):
-    """Clean up test database after all tests."""
+    
+    yield
+    
+    # Cleanup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    
     import os
-    if os.path.exists("test_rbac.db"):
-        os.remove("test_rbac.db")
+    if os.path.exists(TEST_DB_PATH):
+        os.remove(TEST_DB_PATH)
+
+
+@pytest_asyncio.fixture
+async def db_session() -> AsyncSession:
+    """Provide a database session for tests."""
+    async with async_session_maker() as session:
+        yield session
+        await session.rollback()
 
 
 @pytest.fixture

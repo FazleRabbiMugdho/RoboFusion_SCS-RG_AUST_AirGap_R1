@@ -6,7 +6,7 @@ from backend.app.models.base import Base
 
 class Reading(Base):
     __tablename__ = "readings"
-    id = Column(BigInteger, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     sensor_id = Column(Integer, ForeignKey("sensors.id"), nullable=False)
     seq_num = Column(BigInteger, nullable=False)
     raw_value = Column(Double, nullable=False)
