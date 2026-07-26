@@ -10,10 +10,18 @@ export interface CriticalTransitionEvent {
   timestamp: number;
 }
 
+export interface RiskScoreHistoryEntry {
+  score: number;
+  timestamp: number;
+}
+
+const TREND_WINDOW_SIZE = 6;
+
 interface LiveZoneState {
   zoneStates: Record<string, ZoneStateUpdateMessage>;
   connectionStatus: ConnectionStatus;
   criticalTransitions: CriticalTransitionEvent[];
+  riskScoreHistory: Record<string, RiskScoreHistoryEntry[]>;
   applyZoneUpdate: (msg: ZoneStateUpdateMessage) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
 }
@@ -24,6 +32,7 @@ export const useLiveZoneStore = create<LiveZoneState>((set) => ({
   zoneStates: {},
   connectionStatus: "offline",
   criticalTransitions: [],
+  riskScoreHistory: {},
   applyZoneUpdate: (msg) =>
     set((state) => {
       const key = String(msg.zone_id);
@@ -42,12 +51,24 @@ export const useLiveZoneStore = create<LiveZoneState>((set) => ({
         nextTransitions = [...state.criticalTransitions, entry];
       }
 
+      // Ring buffer for risk score history (max TREND_WINDOW_SIZE entries per zone)
+      const history = state.riskScoreHistory[key] || [];
+      const newHistory = [...history, { score: msg.risk_score, timestamp: Date.now() }];
+      if (newHistory.length > TREND_WINDOW_SIZE) {
+        newHistory.shift();
+      }
+      const nextRiskScoreHistory = {
+        ...state.riskScoreHistory,
+        [key]: newHistory,
+      };
+
       return {
         zoneStates: {
           ...state.zoneStates,
           [key]: msg,
         },
         criticalTransitions: nextTransitions,
+        riskScoreHistory: nextRiskScoreHistory,
       };
     }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),

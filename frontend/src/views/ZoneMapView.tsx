@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
-import { Flame, Wind, Droplet, Users, Unplug, AlertOctagon, RefreshCw } from "lucide-react";
+import { Flame, Wind, Droplet, Users, Unplug, AlertOctagon, RefreshCw, TrendingUp } from "lucide-react";
 import { useLiveZoneStore } from "../store/liveZoneStore";
 import { forceReconnect } from "../hooks/useDashboardSocket";
 import { STATUS_META, type Status } from "../components/scs/status";
 import { ZONE_OFFLINE_THRESHOLD_SECONDS } from "../lib/zoneOffline";
 import type { ZoneStateUpdateMessage } from "../types/ws-messages";
+import { isZoneTrendingCritical } from "../lib/riskTrend";
 import "../styles/critical-motion.css";
 
 export interface ZoneOutData {
@@ -92,12 +93,15 @@ function ZoneTile({
   justEnteredCritical: boolean;
 }) {
   const wsUpdate = useLiveZoneStore((state) => state.zoneStates[String(zone.id)]);
+  const riskScoreHistory = useLiveZoneStore((state) => state.riskScoreHistory);
 
   const rawState = wsUpdate?.current_state || zone.current_state;
   const status: Status = isOffline ? "offline" : (rawState.toLowerCase() as Status);
   const meta = STATUS_META[status];
   const Icon = meta.icon;
   const isCriticalState = rawState === "CRITICAL" && !isOffline;
+
+  const isTrendingCritical = isZoneTrendingCritical(String(zone.id), riskScoreHistory, rawState);
 
   const hatch = "repeating-linear-gradient(45deg, rgba(148,163,184,0.14) 0, rgba(148,163,184,0.14) 6px, transparent 6px, transparent 12px)";
 
@@ -147,6 +151,15 @@ function ZoneTile({
       </span>
 
       <HazardSubIndicators wsUpdate={wsUpdate} />
+
+      {isTrendingCritical && (
+        <span
+          className="absolute top-[var(--space-2)] right-[var(--space-2)] ts-xs inline-flex items-center gap-[var(--space-1)] rounded-[var(--radius-control)] px-[var(--space-2)] py-[2px] border"
+          style={{ borderColor: "var(--color-status-warning)", borderStyle: "dashed", borderWidth: "1px", background: "rgba(217, 119, 6, 0.12)", color: "var(--color-status-warning)" }}
+        >
+          <TrendingUp size={11} /> Trending &uarr;
+        </span>
+      )}
 
       {isDegraded && (
         <>
