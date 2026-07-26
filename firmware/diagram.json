@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "author": "RoboFusion",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0 },
+    { "type": "wokwi-pushbutton", "id": "flame_btn", "top": -60, "left": 90 },
+    { "type": "wokwi-potentiometer", "id": "gas_pot", "top": -60, "left": 170 },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir", "top": -60, "left": 250 },
+    { "type": "wokwi-potentiometer", "id": "water_pot", "top": -60, "left": 330 },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": 80, "left": 90 },
+    { "type": "wokwi-led", "id": "led", "top": 80, "left": 160 },
+    { "type": "wokwi-resistor", "id": "led_r", "top": 80, "left": 130, "attrs": { "value": "220" } },
+    { "type": "wokwi-relay-module", "id": "relay", "top": 80, "left": 230 }
+  ],
+  "connections": [
+    [ "esp:27", "flame_btn:1.l", "green", [] ],
+    [ "esp:GND.1", "flame_btn:2.l", "black", [] ],
+
+    [ "esp:34", "gas_pot:SIG", "yellow", [] ],
+    [ "esp:3V3", "gas_pot:VCC", "red", [] ],
+    [ "esp:GND.2", "gas_pot:GND", "black", [] ],
+
+    [ "esp:25", "pir:OUT", "blue", [] ],
+    [ "esp:VIN", "pir:VCC", "red", [] ],
+    [ "esp:GND.3", "pir:GND", "black", [] ],
+
+    [ "esp:35", "water_pot:SIG", "yellow", [] ],
+    [ "esp:26", "water_pot:VCC", "orange", [] ],
+    [ "esp:GND.1", "water_pot:GND", "black", [] ],
+
+    [ "esp:32", "buzzer:1", "purple", [] ],
+    [ "esp:GND.2", "buzzer:2", "black", [] ],
+
+    [ "esp:33", "led_r:1", "orange", [] ],
+    [ "led_r:2", "led:A", "orange", [] ],
+    [ "esp:GND.3", "led:C", "black", [] ],
+
+    [ "esp:14", "relay:IN", "brown", [] ],
+    [ "esp:VIN", "relay:VCC", "red", [] ],
+    [ "esp:GND.1", "relay:GND", "black", [] ]
+  ]
+}
