@@ -39,8 +39,10 @@ def build_training_data(session: Session):
         .order_by(Reading.received_at.asc())
     ).scalars().all()
 
+    sensor_by_id: dict[int, Sensor] = {}
     sensor_by_zone_hazard: dict[tuple[int, HazardType], Sensor] = {}
     for s in session.execute(select(Sensor)).scalars().all():
+        sensor_by_id[s.id] = s
         sensor_by_zone_hazard[(s.zone_id, s.hazard_type)] = s
 
     incidents = session.execute(
@@ -54,10 +56,10 @@ def build_training_data(session: Session):
     y = []
 
     for r in readings:
-        sensor = sensor_by_zone_hazard.get((r.sensor.zone_id, r.sensor.hazard_type))
-        if not sensor:
+        reading_sensor = sensor_by_id.get(r.sensor_id)
+        if not reading_sensor:
             continue
-        zone_id = sensor.zone_id
+        zone_id = reading_sensor.zone_id
 
         latest_per_hazard: dict[HazardType, float] = {}
         for ht in HazardType:

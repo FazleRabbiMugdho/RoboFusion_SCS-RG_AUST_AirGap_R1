@@ -105,8 +105,10 @@ async def list_incidents(
     now = datetime.now(timezone.utc)
     incidents_out = []
     for inc, zone_name, ack_username in rows:
-        end_time = inc.resolved_at or now
-        duration_sec = max(0, int((end_time - inc.triggered_at).total_seconds()))
+        triggered_tz = inc.triggered_at if inc.triggered_at.tzinfo else inc.triggered_at.replace(tzinfo=timezone.utc)
+        end_time = (inc.resolved_at if inc.resolved_at else now)
+        end_tz = end_time if end_time.tzinfo else end_time.replace(tzinfo=timezone.utc)
+        duration_sec = max(0, int((end_tz - triggered_tz).total_seconds()))
 
         incidents_out.append(
             {

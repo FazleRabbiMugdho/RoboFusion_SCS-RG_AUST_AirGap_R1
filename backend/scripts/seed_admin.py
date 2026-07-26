@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from backend.app.core.security import hash_password
+from backend.app.core.zone_auth import compute_zone_api_key_hash
 from backend.app.database import async_session_maker, init_db
 from backend.app.models.user import User
 from backend.app.models.zone import Zone
@@ -64,7 +65,7 @@ async def seed() -> None:
             zone = Zone(
                 name=zone_name,
                 lab_type=lab_type,
-                api_key_hash="dummy_key_hash",
+                api_key_hash=compute_zone_api_key_hash("dummy_key_hash"),
                 current_state=ZoneState.SAFE,
                 last_seen_at=datetime.now(timezone.utc),
             )

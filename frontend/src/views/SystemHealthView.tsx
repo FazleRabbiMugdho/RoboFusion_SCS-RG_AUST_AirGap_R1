@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { ShieldCheck, Zap, VolumeX, AlertOctagon, CheckCheck, RefreshCw, Unplug, Wifi } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
+import { useLiveZoneStore } from "../store/liveZoneStore";
 import { STATUS_META, type Status } from "../components/scs/status";
 import { isZoneOffline } from "../lib/zoneOffline";
 import { PredictedRiskPanel } from "../components/PredictedRiskPanel";
@@ -17,6 +18,8 @@ export interface ZoneHealthData {
 
 export function SystemHealthView() {
   const token = useAuthStore((state) => state.token);
+  const zoneStates = useLiveZoneStore((state) => state.zoneStates);
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [zones, setZones] = useState<ZoneHealthData[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -53,6 +56,25 @@ export function SystemHealthView() {
 
   useEffect(() => {
     fetchHealthData();
+  }, [fetchHealthData]);
+
+  // Debounced refresh on WebSocket zoneStates activity
+  useEffect(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
+    refreshTimerRef.current = setTimeout(() => {
+      fetchHealthData();
+    }, 500);
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    };
+  }, [zoneStates, fetchHealthData]);
+
+  // Auto-refresh every 10s so the table stays live during active hazards
+  useEffect(() => {
+    const interval = setInterval(fetchHealthData, 10000);
+    return () => clearInterval(interval);
   }, [fetchHealthData]);
 
   // Handler for Test Alert ({buzzer: true, led: true, relay: true}) & Silence ({buzzer: false, led: false, relay: false})

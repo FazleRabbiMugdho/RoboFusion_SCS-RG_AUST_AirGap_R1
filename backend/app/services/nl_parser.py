@@ -3,6 +3,7 @@ import logging
 import os
 
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
 from backend.app.schemas.enums import HazardType
@@ -82,6 +83,10 @@ Output ONLY the JSON object:"""
         raw = response.text.strip()
         logger.debug("Gemini raw response: %s", raw)
 
+        if not raw:
+            logger.warning("Empty Gemini response")
+            return None
+
         # Parse JSON
         try:
             parsed = json.loads(raw)
@@ -113,6 +118,6 @@ Output ONLY the JSON object:"""
 
         return parsed
 
-    except Exception as e:
+    except (genai_errors.APIError, ValueError, json.JSONDecodeError, KeyError, AttributeError) as e:
         logger.error("Gemini API error: %s", e)
-        raise
+        return None

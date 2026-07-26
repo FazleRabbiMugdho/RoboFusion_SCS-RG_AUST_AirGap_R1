@@ -15,9 +15,9 @@ from backend.app.models.user import User
 from backend.app.models.zone import Zone
 from backend.app.schemas.enums import HazardType, Role
 from backend.app.services.actuation_dispatch import dispatch_actuation_commands
-from backend.app.services.risk_predictor import predict_zone_risk
+from backend.app.services.risk_fusion import HAZARD_WEIGHTS, OCCUPANCY_MULTIPLIER
 
-ZONE_OFFLINE_THRESHOLD_SECONDS_BACKEND = 5
+ZONE_OFFLINE_THRESHOLD_SECONDS_BACKEND = 60
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,10 @@ async def get_predicted_risk(
         occ_norm = zone_readings.get(HazardType.OCCUPANCY, 0.0)
         occupied = occ_norm >= 0.5
 
-        prob = predict_zone_risk(fire_norm, gas_norm, water_norm, occupied)
+        # Use current risk score as predicted probability
+        raw = fire_norm * HAZARD_WEIGHTS[HazardType.FLAME] + gas_norm * HAZARD_WEIGHTS[HazardType.GAS] + water_norm * HAZARD_WEIGHTS[HazardType.WATER]
+        multiplier = OCCUPANCY_MULTIPLIER if occupied else 1.0
+        prob = min(raw * 100.0 * multiplier / 100.0, 1.0)
 
         predictions.append({
             "zone_id": z.id,
