@@ -1,4 +1,13 @@
-from sqlalchemy import JSON, BigInteger, Column, DateTime, Integer, SmallInteger, String
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    SmallInteger,
+    String,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
 
@@ -20,4 +29,7 @@ class Zone(Base):
     state_since = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     last_risk_breakdown = Column(JSON, nullable=True)
     ip_address = Column(String(45), nullable=True)
+    last_camera_motion_score = Column(Float, nullable=True)
+    last_camera_motion_at = Column(DateTime(timezone=True), nullable=True)
+    last_camera_seq = Column(BigInteger, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

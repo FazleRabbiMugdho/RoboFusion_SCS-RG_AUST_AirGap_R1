@@ -13,6 +13,9 @@ HAZARD_WEIGHTS = {
 
 OCCUPANCY_MULTIPLIER = 1.15
 
+CAMERA_MOTION_THRESHOLD = 0.03
+CAMERA_STALENESS_SECONDS = 10
+
 STATE_THRESHOLDS = {
     ZoneState.SAFE: 40.0,
     ZoneState.WARNING: 70.0,
@@ -20,6 +23,10 @@ STATE_THRESHOLDS = {
 }
 
 STATE_CONFIRMATION_READINGS = 2
+
+# Camera motion cross-check constants (Prompt 34 — tunable from real data)
+CAMERA_MOTION_THRESHOLD = 0.03
+CAMERA_STALENESS_SECONDS = 10
 
 
 def compute_risk_score(

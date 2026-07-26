@@ -1,7 +1,4 @@
 import asyncio
-import hashlib
-import hmac
-import os
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -9,16 +6,18 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.app.core.zone_auth import verify_zone_api_key
 from backend.app.database import get_db
 from backend.app.models.reading import Reading
 from backend.app.models.sensor import Sensor
-from backend.app.models.zone import Zone
 from backend.app.schemas.enums import HazardType, ZoneState
 from backend.app.schemas.readings import ZoneIngestionPayload
 from backend.app.services import remote_alert
 from backend.app.services.actuation_dispatch import dispatch_actuation_commands
 from backend.app.services.broadcast import manager as ws_manager
 from backend.app.services.risk_fusion import (
+    CAMERA_MOTION_THRESHOLD,
+    CAMERA_STALENESS_SECONDS,
     classify_risk,
     compute_risk_breakdown,
     compute_risk_score,
@@ -50,19 +49,8 @@ async def ingest_readings(
     if zone_id != payload.zone_id:
         raise HTTPException(status_code=400, detail="Path zone_id does not match body zone_id")
 
-    # Step 3-4: look up zone and validate API key
-    result = await db.execute(
-        select(Zone).where(Zone.id == zone_id)
-    )
-    zone = result.scalar_one_or_none()
-
-    if zone is None:
-        raise HTTPException(status_code=401, detail="Invalid zone or API key")
-
-    salt = os.environ.get("ZONE_API_KEY_SALT", "").encode("utf-8")
-    key_hash = hmac.new(salt, x_zone_api_key.encode("utf-8"), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(key_hash, zone.api_key_hash):
-        raise HTTPException(status_code=401, detail="Invalid zone or API key")
+    # Step 3-4: look up zone and validate API key via shared dependency
+    zone = await verify_zone_api_key(zone_id, x_zone_api_key, db)
 
     # Step 5: validate seq_num (with row lock inside)
     valid = await validate_and_advance_seq(db, zone_id, payload.seq_num)
@@ -112,6 +100,19 @@ async def ingest_readings(
             hazard_values[ht] = last_val if last_val is not None else 0.0
 
     occupied = hazard_values[HazardType.OCCUPANCY] >= 0.5
+
+    # Camera motion cross-check: OR with PIR (either confirms occupancy)
+    if not occupied:
+        cam_score = zone.last_camera_motion_score
+        cam_at = zone.last_camera_motion_at
+        if (
+            cam_score is not None
+            and cam_at is not None
+            and cam_score > CAMERA_MOTION_THRESHOLD
+            and (datetime.now(timezone.utc) - cam_at).total_seconds()
+            < CAMERA_STALENESS_SECONDS
+        ):
+            occupied = True
 
     risk_score = compute_risk_score(
         hazard_values[HazardType.FLAME],
