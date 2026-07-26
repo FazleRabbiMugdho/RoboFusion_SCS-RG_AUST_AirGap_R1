@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import hmac
 import os
@@ -14,6 +15,7 @@ from backend.app.models.sensor import Sensor
 from backend.app.models.zone import Zone
 from backend.app.schemas.enums import HazardType, ZoneState
 from backend.app.schemas.readings import ZoneIngestionPayload
+from backend.app.services import remote_alert
 from backend.app.services.actuation_dispatch import dispatch_actuation_commands
 from backend.app.services.broadcast import manager as ws_manager
 from backend.app.services.risk_fusion import (
@@ -141,6 +143,32 @@ async def ingest_readings(
         await record_state_transition(db, zone, result_state, risk_score, risk_breakdown)
 
         if result_state == ZoneState.CRITICAL:
+            contributions = {
+                "fire_contribution": risk_breakdown.get("fire_contribution", 0.0),
+                "gas_contribution": risk_breakdown.get("gas_contribution", 0.0),
+                "water_contribution": risk_breakdown.get("water_contribution", 0.0),
+            }
+            max_key = max(contributions, key=contributions.get)
+            hazard_map = {
+                "fire_contribution": HazardType.FLAME,
+                "gas_contribution": HazardType.GAS,
+                "water_contribution": HazardType.WATER,
+            }
+            primary_hazard_type = (
+                hazard_map[max_key].value
+                if contributions[max_key] > 0
+                else None
+            )
+
+            asyncio.create_task(
+                remote_alert.send_remote_alert(
+                    zone_name=zone.name,
+                    risk_score=risk_score,
+                    primary_hazard_type=primary_hazard_type,
+                    triggered_at=datetime.now(timezone.utc),
+                )
+            )
+
             command = {"buzzer": True, "led": True, "relay": True}
             targets = [(zone.ip_address, command)]
         elif old_state == ZoneState.CRITICAL and result_state != ZoneState.CRITICAL:
