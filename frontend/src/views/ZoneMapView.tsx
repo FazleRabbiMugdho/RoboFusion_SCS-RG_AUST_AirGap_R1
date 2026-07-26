@@ -246,15 +246,17 @@ export function ZoneMapView() {
 
       zones.forEach((z) => {
         const wsUpdate = zoneStates[String(z.id)];
-        let lastSeenTimestamp = 0;
+        let isStale = false;
 
+        // ONLY mark offline if we have seen live WS data in this session
+        // and it is now older than the threshold.
+        // We ignore the initial DB last_seen_at so that users can demo the UI 
+        // without hardware constantly running.
         if (wsUpdate?.triggered_at) {
-          lastSeenTimestamp = new Date(wsUpdate.triggered_at).getTime();
-        } else if (z.last_seen_at) {
-          lastSeenTimestamp = new Date(z.last_seen_at).getTime();
+          const lastSeenTimestamp = new Date(wsUpdate.triggered_at).getTime();
+          isStale = (now - lastSeenTimestamp) / 1000 > ZONE_OFFLINE_THRESHOLD_SECONDS;
         }
 
-        const isStale = !lastSeenTimestamp || (now - lastSeenTimestamp) / 1000 > ZONE_OFFLINE_THRESHOLD_SECONDS;
         if (isStale) {
           newOffline.add(z.id);
         }

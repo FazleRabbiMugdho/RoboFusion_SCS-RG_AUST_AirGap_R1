@@ -10,8 +10,8 @@ class Incident(Base):
     __tablename__ = "incidents"
     id = Column(Integer, primary_key=True, autoincrement=True)
     zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
-    status = Column(SAEnum(ZoneState), nullable=False)
-    primary_hazard_type = Column(SAEnum(HazardType), nullable=True)
+    status = Column(SAEnum(ZoneState, native_enum=False), nullable=False)
+    primary_hazard_type = Column(SAEnum(HazardType, native_enum=False), nullable=True)
     risk_score = Column(Double, nullable=False)
     triggered_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     acknowledged_by = Column(Integer, ForeignKey("users.id"), nullable=True)

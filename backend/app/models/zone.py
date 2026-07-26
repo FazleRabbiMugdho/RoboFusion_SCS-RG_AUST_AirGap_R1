@@ -19,10 +19,10 @@ class Zone(Base):
     __tablename__ = "zones"
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False)
-    lab_type = Column(SAEnum(LabType), nullable=False)
+    lab_type = Column(SAEnum(LabType, native_enum=False), nullable=False)
     api_key_hash = Column(String(255), nullable=False)
-    current_state = Column(SAEnum(ZoneState), nullable=False, default=ZoneState.SAFE)
-    pending_band = Column(SAEnum(ZoneState), nullable=True)
+    current_state = Column(SAEnum(ZoneState, native_enum=False), nullable=False, default=ZoneState.SAFE)
+    pending_band = Column(SAEnum(ZoneState, native_enum=False), nullable=True)
     pending_count = Column(SmallInteger, nullable=False, default=0)
     last_accepted_seq = Column(BigInteger, nullable=False, default=0)
     last_seen_at = Column(DateTime(timezone=True), nullable=True)

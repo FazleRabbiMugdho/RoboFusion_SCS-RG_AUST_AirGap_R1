@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrainCircuit, AlertTriangle } from "lucide-react";
 import type { ZoneHealthData } from "../views/SystemHealthView";
+import { useAuthStore } from "../store/authStore";
 
 const PANEL_MODEL_READY = true;
 
@@ -113,6 +114,7 @@ interface Props {
 }
 
 export function PredictedRiskPanel({ zones }: Props) {
+  const token = useAuthStore((state) => state.token);
   const [predictions, setPredictions] = useState<PredictedRiskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export function PredictedRiskPanel({ zones }: Props) {
       try {
         const res = await fetch("/api/v1/admin/zones/predicted-risk", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("auth_token") || ""}`,
+            Authorization: `Bearer ${token || ""}`,
           },
         });
         if (!res.ok) {
@@ -156,7 +158,7 @@ export function PredictedRiskPanel({ zones }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [token]);
 
   if (!PANEL_MODEL_READY) {
     return (
