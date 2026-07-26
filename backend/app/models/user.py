@@ -11,5 +11,5 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(SAEnum(Role), nullable=False, default=Role.STAFF)
+    role = Column(SAEnum(Role, native_enum=False), nullable=False, default=Role.STAFF)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

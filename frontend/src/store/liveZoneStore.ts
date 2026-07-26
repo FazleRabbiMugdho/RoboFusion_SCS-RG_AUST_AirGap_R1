@@ -72,7 +72,7 @@ function _applySingleZoneUpdate(
 
 export const useLiveZoneStore = create<LiveZoneState>((set) => ({
   zoneStates: {},
-  connectionStatus: "offline",
+  connectionStatus: "connecting",
   criticalTransitions: [],
   riskScoreHistory: {},
   applyZoneUpdate: (msg) =>
